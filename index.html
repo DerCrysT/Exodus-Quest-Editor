@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exodus Quest Editor</title>
+<meta name="description" content="Browser-Tool zum Erstellen von Quest-, NPC-, Dialog- und Stash-JSONs für den DayZ-Mod ExodusQuests.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%230b0f0c%22/><text x=%2216%22 y=%2222%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22%23d9a359%22 font-family=%22Georgia,serif%22>E</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">E</span>
+    <div>
+      <h1>Exodus Quest Editor</h1>
+      <p>JSON-Editor für <code>ExodusQuests</code> &mdash; Quests, NPCs, Dialoge, Stashes</p>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="quest">Quest</button>
+    <button class="tab" data-tab="npc">NPC</button>
+    <button class="tab" data-tab="dialog">Dialog</button>
+    <button class="tab" data-tab="stash">Stash</button>
+    <button class="tab" data-tab="help">Hilfe</button>
+  </nav>
+</header>
+
+<main id="panels">
+
+  <!-- ============================================================ QUEST ============================================================ -->
+  <section class="panel active" id="panel-quest" data-editor="quest">
+    <div class="toolbar">
+      <button class="btn" data-act="new">Neu</button>
+      <button class="btn" data-act="import">JSON laden…</button>
+      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
+      <button class="btn" data-act="paste">JSON einfügen…</button>
+      <span class="spacer"></span>
+      <span class="status" data-el="status"></span>
+      <button class="btn" data-act="validate">Prüfen</button>
+      <button class="btn primary" data-act="copy">JSON kopieren</button>
+      <button class="btn primary" data-act="download">Herunterladen</button>
+    </div>
+    <div class="layout">
+      <div class="col col-form" data-el="form"></div>
+      <div class="col col-preview">
+        <div class="preview-head">
+          <span>Vorschau</span>
+        </div>
+        <pre class="preview" data-el="preview"></pre>
+        <div class="issues" data-el="issues"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ NPC ============================================================ -->
+  <section class="panel" id="panel-npc" data-editor="npc">
+    <div class="toolbar">
+      <button class="btn" data-act="new">Neu</button>
+      <button class="btn" data-act="import">JSON laden…</button>
+      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
+      <button class="btn" data-act="paste">JSON einfügen…</button>
+      <span class="spacer"></span>
+      <span class="status" data-el="status"></span>
+      <button class="btn" data-act="validate">Prüfen</button>
+      <button class="btn primary" data-act="copy">JSON kopieren</button>
+      <button class="btn primary" data-act="download">Herunterladen</button>
+    </div>
+    <div class="layout">
+      <div class="col col-form" data-el="form"></div>
+      <div class="col col-preview">
+        <div class="preview-head"><span>Vorschau</span></div>
+        <pre class="preview" data-el="preview"></pre>
+        <div class="issues" data-el="issues"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ DIALOG ============================================================ -->
+  <section class="panel" id="panel-dialog" data-editor="dialog">
+    <div class="toolbar">
+      <button class="btn" data-act="new">Neu</button>
+      <button class="btn" data-act="import">JSON laden…</button>
+      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
+      <button class="btn" data-act="paste">JSON einfügen…</button>
+      <span class="spacer"></span>
+      <span class="status" data-el="status"></span>
+      <button class="btn" data-act="validate">Prüfen</button>
+      <button class="btn primary" data-act="copy">JSON kopieren</button>
+      <button class="btn primary" data-act="download">Herunterladen</button>
+    </div>
+    <div class="layout">
+      <div class="col col-form" data-el="form"></div>
+      <div class="col col-preview">
+        <div class="preview-head"><span>Vorschau</span></div>
+        <pre class="preview" data-el="preview"></pre>
+        <div class="issues" data-el="issues"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ STASH ============================================================ -->
+  <section class="panel" id="panel-stash" data-editor="stash">
+    <div class="toolbar">
+      <button class="btn" data-act="new">Neu</button>
+      <button class="btn" data-act="import">JSON laden…</button>
+      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
+      <button class="btn" data-act="paste">JSON einfügen…</button>
+      <span class="spacer"></span>
+      <span class="status" data-el="status"></span>
+      <button class="btn" data-act="validate">Prüfen</button>
+      <button class="btn primary" data-act="copy">JSON kopieren</button>
+      <button class="btn primary" data-act="download">Herunterladen</button>
+    </div>
+    <div class="layout">
+      <div class="col col-form" data-el="form"></div>
+      <div class="col col-preview">
+        <div class="preview-head"><span>Vorschau</span></div>
+        <pre class="preview" data-el="preview"></pre>
+        <div class="issues" data-el="issues"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ HELP ============================================================ -->
+  <section class="panel" id="panel-help" data-editor="help">
+    <div class="help">
+      <h2>Was ist das hier?</h2>
+      <p>Dieses Tool baut die vier JSON-Dateitypen von <strong>ExodusQuests</strong> per Formular zusammen: Quests, NPCs,
+         Dialoge und Stashes. Es läuft komplett im Browser &mdash; nichts wird hochgeladen, alles bleibt lokal. Entwürfe
+         werden automatisch im Browser zwischengespeichert (<code>localStorage</code>) und bleiben beim nächsten Besuch erhalten.</p>
+      <h2>Arbeitsablauf</h2>
+      <ol>
+        <li>Tab wählen (Quest/NPC/Dialog/Stash) und das Formular ausfüllen. Die Vorschau rechts zeigt live das fertige JSON.</li>
+        <li>Mit <strong>Prüfen</strong> gegen die wichtigsten Regeln des Mod-Validators checken (fehlende Pflichtfelder,
+            doppelte IDs, unbekannte Rangnamen, Komma-Listen, Ruf-Bereiche &hellip;). Das ersetzt nicht den echten
+            Validator im Server-Log, hilft aber, die häufigsten Fehler vorher zu finden.</li>
+        <li>Mit <strong>JSON kopieren</strong> oder <strong>Herunterladen</strong> die Datei übernehmen und in den passenden
+            Ordner im Server-Profil legen (<code>Quest/</code>, <code>NPC/</code>, <code>Dialog/</code>, <code>Stash/</code>,
+            beliebig tief verschachtelt).</li>
+        <li>Bestehende Datei ändern? <strong>JSON laden…</strong> oder <strong>JSON einfügen…</strong> benutzen &mdash;
+            das Formular füllt sich automatisch.</li>
+      </ol>
+      <h2>Hinweise</h2>
+      <ul>
+        <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod
+            gemeinsam zur selben Anzahl &mdash; das ist <em>keine</em> ODER-Quest, sondern eine Sammelmenge.</li>
+        <li>Rangnamen bei Ruf-Bereichen: Brother in Arms, Ally, Friend, Associate, Acquaintance, Neutral, Suspicious,
+            Disliked, Enemy, Wanted, Execution Target. Groß-/Kleinschreibung und Leerzeichen sind egal.</li>
+        <li><code>Min</code>/<code>Max</code> eines Ruf-Bereichs mit dem Wert 0 gelten dem Spiel als „nicht gesetzt“ (voller
+            Bereich) &mdash; für „bis 0“ bitte <code>MaxRank</code> „Neutral“ verwenden. Das Tool warnt, falls das passiert.</li>
+        <li>Dieses Tool kennt die aktuellen Felder von ExodusQuests (Stand: Reputation-System, Zeitlimit, Start-Item-Rückgabe).
+            Bei neuen Mod-Versionen kann es hinter den echten Schemas zurückbleiben &mdash; im Zweifel zählt
+            <code>docs/schemas/*.json</code> im Mod-Repo.</li>
+      </ul>
+      <h2>Quelle</h2>
+      <p>Repository: <a href="https://github.com/DerCrysT/Exodus-Quest-Editor" target="_blank" rel="noopener">github.com/DerCrysT/Exodus-Quest-Editor</a></p>
+    </div>
+  </section>
+
+</main>
+
+<div class="modal-backdrop" data-el="modal-backdrop" hidden>
+  <div class="modal" data-el="modal">
+    <div class="modal-head">
+      <span data-el="modal-title"></span>
+      <button class="btn icon" data-act="modal-close">✕</button>
+    </div>
+    <div class="modal-body" data-el="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast-host" data-el="toast-host"></div>
+
+<script src="js/common.js"></script>
+<script src="js/data.js"></script>
+<script src="js/quest.js"></script>
+<script src="js/npc.js"></script>
+<script src="js/dialog.js"></script>
+<script src="js/stash.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
