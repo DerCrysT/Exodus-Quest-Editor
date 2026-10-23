@@ -182,6 +182,11 @@ window.EQE = window.EQE || {};
     function chip(text, cls, onclick, title) {
       return h("span", { class: "chip " + (cls || ""), title: title || "", onclick }, [h("span", { text })]);
     }
+    /** Anzeigename eines NPCs (Name, sonst ID); Unbekannte bleiben bei der ID. */
+    function npcLabel(id) {
+      const it = P().find("npc", id);
+      return it && it.json.Name ? it.json.Name : id;
+    }
     function openBy(kind, id) {
       const it = P().find(kind, id);
       return it ? () => EQE.openItem(it.uid) : null;
@@ -202,7 +207,7 @@ window.EQE = window.EQE || {};
         return chip(di && di.json.Title ? d + " – " + di.json.Title : d, di ? "" : "bad", openBy("dialog", d), di ? "" : "Dialog existiert nicht im Projekt");
       });
       const links = (arr, cls) =>
-        (arr || []).map((l) => chip(l.NpcId + " ×" + (l.Factor === undefined ? 1 : l.Factor), P().find("npc", l.NpcId) ? cls : "bad", openBy("npc", l.NpcId), "Faktor " + (l.Factor === undefined ? 1 : l.Factor)));
+        (arr || []).map((l) => chip(npcLabel(l.NpcId) + " ×" + (l.Factor === undefined ? 1 : l.Factor), P().find("npc", l.NpcId) ? cls : "bad", openBy("npc", l.NpcId), l.NpcId + " · Faktor " + (l.Factor === undefined ? 1 : l.Factor)));
       const row = (label, nodes, empty) =>
         h("div", { class: "ov-row" }, [h("div", { class: "ov-label", text: label }), h("div", { class: "strlist" }, nodes.length ? nodes : [h("span", { class: "muted", text: empty || "—" })])]);
 
@@ -223,7 +228,7 @@ window.EQE = window.EQE || {};
         asEnemy.length || asAlly.length
           ? h("div", { class: "ov-row" }, [
               h("div", { class: "ov-label", text: "Von anderen so eingetragen" }),
-              h("div", { class: "strlist" }, asAlly.map((o) => chip("Verbündeter von " + P().idOf(o), "good", () => EQE.openItem(o.uid))).concat(asEnemy.map((o) => chip("Rivale von " + P().idOf(o), "bad2", () => EQE.openItem(o.uid))))),
+              h("div", { class: "strlist" }, asAlly.map((o) => chip("Verbündeter von " + npcLabel(P().idOf(o)), "good", () => EQE.openItem(o.uid), P().idOf(o))).concat(asEnemy.map((o) => chip("Rivale von " + npcLabel(P().idOf(o)), "bad2", () => EQE.openItem(o.uid), P().idOf(o))))),
             ])
           : null,
       ]);
