@@ -100,12 +100,27 @@ window.EQE = window.EQE || {};
       const actions = h("div", { class: "toolbar" }, [
         h("button", { class: "btn", type: "button", text: "Alles prüfen", onclick: runCheck }),
         h("span", { class: "spacer" }),
+        P().canWriteFolder()
+          ? h("button", { class: "btn primary", type: "button", title: "Schreibt neue/geänderte Dateien in den gewählten Projektordner und löscht dort die im Editor entfernten Dateien", text: "In Projektordner speichern…", onclick: () => P().saveToFolder() })
+          : null,
         h("button", { class: "btn primary", type: "button", text: "ZIP: nur Geändertes", onclick: () => downloadZip(true) }),
         h("button", { class: "btn primary", type: "button", text: "ZIP: alles", onclick: () => downloadZip(false) }),
         h("button", { class: "btn danger", type: "button", text: "Projekt leeren", onclick: () => { if (confirm("Alle Dateien aus dem Projekt entfernen? (Deine Dateien auf dem Rechner bleiben unberührt, ungesicherte Änderungen gehen verloren.)")) { pstate.results = null; P().clearAll(); } } }),
       ]);
 
       const parts = [drop, summaryCards(), actions];
+
+      const dels = P().pendingDeletes();
+      if (dels.length) {
+        parts.push(
+          h("div", { class: "card" }, [
+            h("h3", { text: "Beim Export zu löschen (" + dels.length + ")" }),
+            h("p", { class: "hint", text: "Im Editor gelöscht oder umbenannt. „In Projektordner speichern“ entfernt sie direkt; das ZIP enthält _LOESCHEN.txt und _loeschen.bat." }),
+            h("ul", {}, dels.slice(0, 30).map((d) => h("li", {}, [h("code", { text: d.path })]))),
+            dels.length > 30 ? h("p", { class: "hint", text: "… und " + (dels.length - 30) + " weitere" }) : null,
+          ])
+        );
+      }
 
       if (pstate.results) {
         const errs = pstate.results.filter((r) => r.level === "error").length;

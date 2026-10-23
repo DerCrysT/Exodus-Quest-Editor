@@ -23,6 +23,11 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
 7. **Exportieren:** *ZIP: nur Geändertes* liefert genau die neu angelegten/geänderten Dateien in der Struktur
    `Quest/ NPC/ Dialog/ Stash/` (Unterordner bleiben erhalten), *ZIP: alles* das ganze Projekt. Unveränderte Dateien werden
    byte-genau wie geladen exportiert.
+   **Neue und gelöschte Dateien:** Neue Dateien landen im passenden Ordner (aus den Upload-Pfaden abgeleitet, z. B. `Quest/…`,
+   `XCP_Trade_System/trader_category_list/…`). Im Tool gelöschte oder (Kategorien) umbenannte Dateien werden im Projekt-Tab unter
+   „Beim Export zu löschen“ gelistet. **„In Projektordner speichern…“** (Chrome/Edge) schreibt Geändertes und löscht Entferntes direkt
+   in deinem Projektordner (Ordner einmal bestätigen, vorher kommt eine Liste zur Kontrolle). Das ZIP kann nicht löschen – es enthält
+   deshalb `_LOESCHEN.txt` und `_loeschen.bat` (im Profilordner ausführen).
 
 8. **Trader (XCP_Trader_V2):** Bereich *Handel* in der linken Navigation – Trader (Einträge der `Traders_list.json`), Handelskategorien
    (`trader_category_list/*.json`, Produkttabelle mit Filter, Klassen-Import und Preis-Helfern) und Tauschkategorien

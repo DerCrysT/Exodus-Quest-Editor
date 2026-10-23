@@ -24,7 +24,10 @@ window.EQE = window.EQE || {};
   const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
+  const DEL_KEY = "eqe:deleted:v1";
   let items = [];
+  /** Im Tool gelöschte Dateien, die aus dem Upload stammen: {kind, path} – werden beim Export mitgelöscht. */
+  let deleted = [];
   const listeners = [];
   let persistTimer = null;
   let warnedQuota = false;
@@ -44,6 +47,7 @@ window.EQE = window.EQE || {};
     persistTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify(items));
+        localStorage.setItem(DEL_KEY, JSON.stringify(deleted));
       } catch (e) {
         if (!warnedQuota) {
           warnedQuota = true;
@@ -57,8 +61,11 @@ window.EQE = window.EQE || {};
     try {
       const s = localStorage.getItem(STORE_KEY);
       if (s) items = JSON.parse(s).filter((i) => i && KINDS.indexOf(i.kind) > -1 && i.json && typeof i.json === "object");
+      const d = localStorage.getItem(DEL_KEY);
+      if (d) deleted = JSON.parse(d).filter((x) => x && x.path && FOLDER[x.kind]);
     } catch (e) {
       items = [];
+      deleted = [];
     }
   }
 
@@ -142,6 +149,7 @@ window.EQE = window.EQE || {};
     opts = opts || {};
     const fileBased = FILEID_KINDS.indexOf(kind) > -1;
     const id = fileBased ? opts.fileId || fileIdFromPath(opts.path) : typeof json[ID_KEY[kind]] === "string" ? json[ID_KEY[kind]] : "";
+    if (opts.path) deleted = deleted.filter((d) => d.path !== opts.path);
     let item = id && !opts.isNew ? find(kind, id) : null;
     let replaced = false;
     if (item) {
@@ -213,6 +221,7 @@ window.EQE = window.EQE || {};
     if (!it) return;
     const myId = idOf(it);
     items = items.filter((i) => i.uid !== id);
+    if (it.path && it.kind !== "trader" && !deleted.some((d) => d.path === it.path)) deleted.push({ kind: it.kind, path: it.path });
     // Zuweisungen in NPCs aufräumen
     if (myId && (it.kind === "quest" || it.kind === "dialog")) {
       byKind("npc").forEach((n) => {
@@ -232,6 +241,7 @@ window.EQE = window.EQE || {};
 
   function clearAll() {
     items = [];
+    deleted = [];
     persist();
     emit({ type: "clear" });
   }
@@ -658,18 +668,61 @@ window.EQE = window.EQE || {};
     return new Blob([].concat(chunks, central, [new Uint8Array(end.buffer)]), { type: "application/zip" });
   }
 
+  /** Pfad relativ zum Profilordner, abgeleitet aus dem Upload-Pfad (z. B. "Quest/Test/x.json"). */
+  function relFromPath(kind, path) {
+    const folder = FOLDER[kind];
+    const marker = FOLDER_MARKER[kind] || folder.split("/").pop();
+    const segs = String(path).split("/").filter((x) => x);
+    const idx = segs.findIndex((s) => s.toLowerCase() === marker.toLowerCase());
+    if (idx > -1 && idx < segs.length - 1) return folder + "/" + segs.slice(idx + 1).join("/");
+    return folder + "/" + segs[segs.length - 1];
+  }
+
   function exportPath(item) {
     const folder = FOLDER[item.kind];
     const fileBased = FILEID_KINDS.indexOf(item.kind) > -1;
-    const marker = FOLDER_MARKER[item.kind] || folder.split("/").pop();
-    if (item.path && !(fileBased && item.fileId && fileIdFromPath(item.path) !== item.fileId)) {
-      const segs = item.path.split("/").filter((x) => x);
-      const idx = segs.findIndex((s) => s.toLowerCase() === marker.toLowerCase());
-      if (idx > -1 && idx < segs.length - 1) return folder + "/" + segs.slice(idx + 1).join("/");
-      return folder + "/" + segs[segs.length - 1];
-    }
+    if (item.path && !(fileBased && item.fileId && fileIdFromPath(item.path) !== item.fileId)) return relFromPath(item.kind, item.path);
     if (item.kind === "trader") return folder + "/Traders_list.json";
     return folder + "/" + (idOf(item) || "unbenannt") + ".json";
+  }
+
+  /** Ordner oberhalb des Profil-Unterordners (z. B. "profiles/ExodusQuests") einer geladenen Datei. */
+  function prefixOf(item) {
+    const n = relFromPath(item.kind, item.path).split("/").length;
+    const segs = item.path.split("/").filter((x) => x);
+    return segs.slice(0, Math.max(0, segs.length - n)).join("/");
+  }
+
+  /** Voller Zielpfad im hochgeladenen Projektordner (inkl. Wurzelordner). */
+  function targetPath(item) {
+    const rel = exportPath(item);
+    if (item.path && relFromPath(item.kind, item.path) === rel) return item.path;
+    const top = rel.split("/")[0];
+    const src = (item.path ? [item] : []).concat(
+      items.filter((i) => i.path && FOLDER[i.kind].split("/")[0] === top),
+      items.filter((i) => i.path)
+    );
+    const prefix = src.length ? prefixOf(src[0]) : "";
+    return prefix ? prefix + "/" + rel : rel;
+  }
+
+  /** Alles, was beim Export gelöscht werden soll: im Tool gelöschte und umbenannte Dateien. */
+  function pendingDeletes() {
+    const writes = new Set();
+    items.forEach((it) => writes.add(targetPath(it).toLowerCase()));
+    const out = [];
+    const seen = new Set();
+    const push = (path, kind) => {
+      const key = path.toLowerCase();
+      if (writes.has(key) || seen.has(key)) return;
+      seen.add(key);
+      out.push({ path, rel: relFromPath(kind, path), kind });
+    };
+    deleted.forEach((d) => push(d.path, d.kind));
+    items.forEach((it) => {
+      if (it.kind !== "trader" && it.path && targetPath(it) !== it.path) push(it.path, it.kind);
+    });
+    return out;
   }
 
   function exportText(item) {
@@ -694,12 +747,124 @@ window.EQE = window.EQE || {};
       used.add(name.toLowerCase());
       files.push({ name, text: exportText(it) });
     });
-    return { blob: buildZip(files), count: files.length };
+    const dels = pendingDeletes();
+    if (dels.length) {
+      const nl = "\r\n";
+      files.push({
+        name: "_LOESCHEN.txt",
+        text: "Diese Dateien wurden im Editor gelöscht/umbenannt und sollen im Profilordner entfernt werden:" + nl + dels.map((d) => d.rel).join(nl) + nl,
+      });
+      files.push({
+        name: "_loeschen.bat",
+        text:
+          "@echo off" + nl +
+          "REM Im Profilordner ausfuehren (dort, wo Quest/ NPC/ Dialog/ Stash/ liegen). Loescht die im Editor entfernten Dateien." + nl +
+          "chcp 65001 >nul" + nl +
+          dels.map((d) => { const w = d.rel.replace(/\//g, "\\"); return 'if exist "' + w + '" del "' + w + '"'; }).join(nl) + nl +
+          "echo Fertig." + nl + "pause" + nl,
+      });
+    }
+    return { blob: buildZip(files), count: files.length - (dels.length ? 2 : 0), deletes: dels.length };
+  }
+
+  // ---------------------------------------------------------------- Direkt in den Projektordner speichern
+  const canWriteFolder = () => typeof window.showDirectoryPicker === "function";
+
+  async function dirFor(root, segs, create) {
+    let d = root;
+    for (const seg of segs) d = await d.getDirectoryHandle(seg, { create });
+    return d;
+  }
+
+  /** Geänderte Dateien in den Projektordner schreiben und gelöschte entfernen (Chromium: File System Access API). */
+  async function saveToFolder() {
+    if (!canWriteFolder()) {
+      EQE.toast("Dein Browser kann nicht direkt in Ordner schreiben – bitte Chrome/Edge nutzen oder das ZIP verwenden.", true);
+      return null;
+    }
+    const changed = items.filter((i) => i.kind !== "trader" && isChanged(i));
+    const traders = byKind("trader");
+    const traderChanged = traders.length > 0 && traders.some(isChanged);
+    const dels = pendingDeletes();
+    if (!changed.length && !traderChanged && !dels.length) {
+      EQE.toast("Nichts zu speichern – es gibt keine Änderungen.", true);
+      return null;
+    }
+    let root;
+    try {
+      root = await window.showDirectoryPicker({ mode: "readwrite", id: "eqe-project" });
+    } catch (e) {
+      return null; // abgebrochen
+    }
+    const firsts = items.filter((i) => i.path && i.path.indexOf("/") > -1).map((i) => i.path.split("/")[0]);
+    const rootName = firsts.length && firsts.every((f) => f === firsts[0]) ? firsts[0] : null;
+    if (rootName && root.name !== rootName) {
+      if (!window.confirm('Du hast den Ordner "' + root.name + '" gewählt, hochgeladen wurde aber "' + rootName + '". Trotzdem dort speichern?')) return null;
+    }
+    const writes = changed.map((it) => ({ group: [it], path: targetPath(it), text: exportText(it) }));
+    if (traderChanged) writes.push({ group: traders, path: targetPath(traders[0]), text: JSON.stringify({ Traders: traders.map((t) => t.json) }, null, 2) + "\n" });
+    const more = (n) => (n > 12 ? "\n… (+" + (n - 12) + ")" : "");
+    const msg =
+      writes.length + " Datei(en) schreiben, " + dels.length + " löschen in \"" + root.name + '":\n\n' +
+      writes.slice(0, 12).map((w) => "+ " + w.path).join("\n") + more(writes.length) +
+      (dels.length ? "\n\n" + dels.slice(0, 12).map((d) => "– " + d.path).join("\n") + more(dels.length) : "") +
+      "\n\nFortfahren?";
+    if (!window.confirm(msg)) return null;
+
+    const rel = (p) => {
+      const segs = p.split("/").filter((x) => x);
+      if (rootName && segs[0] === rootName) segs.shift();
+      return segs;
+    };
+    let okW = 0;
+    let okD = 0;
+    const errors = [];
+    const failedDel = new Set();
+    for (const w of writes) {
+      try {
+        const segs = rel(w.path);
+        const name = segs.pop();
+        const dir = await dirFor(root, segs, true);
+        const fh = await dir.getFileHandle(name, { create: true });
+        const ws = await fh.createWritable();
+        await ws.write(w.text);
+        await ws.close();
+        w.group.forEach((it) => {
+          it.rawText = it.kind === "trader" ? null : w.text;
+          it.isNew = false;
+          it.dirty = false;
+          it.path = w.path;
+        });
+        okW++;
+      } catch (e) {
+        errors.push(w.path + ": " + (e && e.message));
+      }
+    }
+    for (const d of dels) {
+      try {
+        const segs = rel(d.path);
+        const name = segs.pop();
+        const dir = await dirFor(root, segs, false);
+        await dir.removeEntry(name);
+        okD++;
+      } catch (e) {
+        if (e && e.name === "NotFoundError") okD++; // schon weg
+        else {
+          failedDel.add(d.path);
+          errors.push(d.path + ": " + (e && e.message));
+        }
+      }
+    }
+    deleted = deleted.filter((d) => failedDel.has(d.path));
+    persist();
+    emit({ type: "saved" });
+    EQE.toast(okW + " geschrieben, " + okD + " gelöscht" + (errors.length ? " – " + errors.length + " Fehler: " + errors[0] : "."), errors.length > 0);
+    return { written: okW, deleted: okD, errors };
   }
 
   function downloadZip(onlyChanged) {
     const r = exportZip(onlyChanged);
-    if (!r.count) {
+    if (!r.count && !r.deletes) {
       EQE.toast(onlyChanged ? "Nichts geändert – es gibt nichts zu exportieren." : "Das Projekt ist leer.", true);
       return;
     }
@@ -711,7 +876,7 @@ window.EQE = window.EQE || {};
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 3000);
-    EQE.toast(r.count + " Datei(en) exportiert.");
+    EQE.toast(r.count + " Datei(en) exportiert" + (r.deletes ? ", " + r.deletes + " zum Löschen (siehe _LOESCHEN.txt / _loeschen.bat im ZIP)." : "."));
   }
 
   // ---------------------------------------------------------------- Datei-Dialoge
@@ -794,6 +959,10 @@ window.EQE = window.EQE || {};
     exportZip,
     downloadZip,
     exportPath,
-    changedCount: () => items.filter(isChanged).length,
+    changedCount: () => items.filter(isChanged).length + pendingDeletes().length,
+    pendingDeletes,
+    targetPath,
+    canWriteFolder,
+    saveToFolder,
   };
 })(window.EQE);
