@@ -89,7 +89,10 @@
       dlCount.textContent = String(n);
       dlBtn.disabled = n === 0;
     };
-    dlBtn.addEventListener("click", () => EQE.Project.downloadZip(true));
+    const direct = EQE.Project.canWriteFolder();
+    dlBtn.firstChild.textContent = direct ? "Änderungen speichern " : "Geänderte Dateien laden ";
+    dlBtn.title = direct ? "Neue/geänderte Dateien in den Projektordner schreiben, gelöschte dort entfernen" : "Alle neuen/geänderten Dateien als ZIP herunterladen";
+    dlBtn.addEventListener("click", () => (direct ? EQE.Project.saveToFolder() : EQE.Project.downloadZip(true)));
     EQE.Project.on(updateCount);
     updateCount();
 

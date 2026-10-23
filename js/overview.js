@@ -93,7 +93,7 @@ window.EQE = window.EQE || {};
         h("div", { class: "drop-title", text: "Dateien oder ganze Ordner hierher ziehen" }),
         h("div", { class: "help", text: "Der Typ (Quest / NPC / Dialog / Stash) wird automatisch erkannt. Config.json, Spielerdaten u. Ä. werden übersprungen. Gleiche IDs ersetzen vorhandene Einträge." }),
         h("div", { class: "drop-buttons" }, [
-          h("button", { class: "btn primary", type: "button", text: "Ordner wählen… (z. B. ExodusQuests-Profilordner)", onclick: () => P().pick(true) }),
+          h("button", { class: "btn primary", type: "button", text: "Projektordner verbinden… (z. B. ExodusQuests-Profil)", onclick: () => P().pick(true) }),
           h("button", { class: "btn", type: "button", text: "Einzelne Dateien wählen…", onclick: () => P().pick(false) }),
         ]),
       ]);

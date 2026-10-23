@@ -24,6 +24,8 @@ window.EQE = window.EQE || {};
   const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
+  /** Verbundener Projektordner (File System Access API), falls per Ordner-Dialog geladen. */
+  let rootHandle = null;
   const DEL_KEY = "eqe:deleted:v1";
   let items = [];
   /** Im Tool gelöschte Dateien, die aus dem Upload stammen: {kind, path} – werden beim Export mitgelöscht. */
@@ -242,6 +244,7 @@ window.EQE = window.EQE || {};
   function clearAll() {
     items = [];
     deleted = [];
+    rootHandle = null;
     persist();
     emit({ type: "clear" });
   }
@@ -790,16 +793,23 @@ window.EQE = window.EQE || {};
       EQE.toast("Nichts zu speichern – es gibt keine Änderungen.", true);
       return null;
     }
-    let root;
+    let root = rootHandle;
     try {
-      root = await window.showDirectoryPicker({ mode: "readwrite", id: "eqe-project" });
+      if (root && (await root.requestPermission({ mode: "readwrite" })) !== "granted") root = null;
     } catch (e) {
-      return null; // abgebrochen
+      root = null;
+    }
+    if (!root) {
+      try {
+        root = await window.showDirectoryPicker({ mode: "readwrite", id: "eqe-project" });
+      } catch (e) {
+        return null; // abgebrochen
+      }
     }
     const firsts = items.filter((i) => i.path && i.path.indexOf("/") > -1).map((i) => i.path.split("/")[0]);
     const rootName = firsts.length && firsts.every((f) => f === firsts[0]) ? firsts[0] : null;
     if (rootName && root.name !== rootName) {
-      if (!window.confirm('Du hast den Ordner "' + root.name + '" gewählt, hochgeladen wurde aber "' + rootName + '". Trotzdem dort speichern?')) return null;
+      if (root !== rootHandle && !window.confirm('Du hast den Ordner "' + root.name + '" gewählt, hochgeladen wurde aber "' + rootName + '". Trotzdem dort speichern?')) return null;
     }
     const writes = changed.map((it) => ({ group: [it], path: targetPath(it), text: exportText(it) }));
     if (traderChanged) writes.push({ group: traders, path: targetPath(traders[0]), text: JSON.stringify({ Traders: traders.map((t) => t.json) }, null, 2) + "\n" });
@@ -810,6 +820,7 @@ window.EQE = window.EQE || {};
       (dels.length ? "\n\n" + dels.slice(0, 12).map((d) => "– " + d.path).join("\n") + more(dels.length) : "") +
       "\n\nFortfahren?";
     if (!window.confirm(msg)) return null;
+    rootHandle = root;
 
     const rel = (p) => {
       const segs = p.split("/").filter((x) => x);
@@ -880,7 +891,36 @@ window.EQE = window.EQE || {};
   }
 
   // ---------------------------------------------------------------- Datei-Dialoge
+  async function walkHandle(dir, prefix, out) {
+    for await (const [name, h] of dir.entries()) {
+      if (h.kind === "directory") await walkHandle(h, prefix + name + "/", out);
+      else if (/\.json$/i.test(name)) {
+        try {
+          out.push({ file: await h.getFile(), path: prefix + name });
+        } catch (e) {
+          /* überspringen */
+        }
+      }
+    }
+  }
+
+  async function pickWithHandle() {
+    let dir;
+    try {
+      dir = await window.showDirectoryPicker({ mode: "readwrite", id: "eqe-project" });
+    } catch (e) {
+      return; // abgebrochen
+    }
+    rootHandle = dir;
+    const entries = [];
+    await walkHandle(dir, dir.name + "/", entries);
+    const r = await readEntries(entries);
+    EQE.toast(summary(r) + " – Ordner verbunden, Speichern schreibt direkt dorthin.", !KINDS.some((k) => r.counts[k]));
+    emit({ type: "ingest", result: r });
+  }
+
   function pick(folder) {
+    if (folder && canWriteFolder()) return pickWithHandle();
     const input = document.createElement("input");
     input.type = "file";
     if (folder) {
@@ -901,6 +941,15 @@ window.EQE = window.EQE || {};
   }
 
   async function ingestDrop(dataTransfer) {
+    try {
+      const its = Array.from(dataTransfer.items || []);
+      if (its.length === 1 && its[0].getAsFileSystemHandle) {
+        const hd = await its[0].getAsFileSystemHandle();
+        if (hd && hd.kind === "directory") rootHandle = hd;
+      }
+    } catch (e) {
+      /* kein Handle – dann beim Speichern nachfragen */
+    }
     const entries = await entriesFromDrop(dataTransfer);
     const r = await readEntries(entries);
     EQE.toast(summary(r), !KINDS.some((k) => r.counts[k]));
@@ -964,5 +1013,6 @@ window.EQE = window.EQE || {};
     targetPath,
     canWriteFolder,
     saveToFolder,
+    hasFolder: () => !!rootHandle,
   };
 })(window.EQE);
