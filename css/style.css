@@ -68,21 +68,8 @@ code {
 .brand h1 { font-size: 17px; margin: 0; letter-spacing: 0.3px; font-family: var(--serif); color: var(--accent); }
 .brand p { margin: 2px 0 0; font-size: 12px; color: var(--text-dim); }
 
-.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.tab {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-dim);
-  padding: 8px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 13px;
-}
-.tab:hover { color: var(--text); border-color: var(--border-light); }
-.tab.active { background: var(--bg-card); color: var(--accent); border-color: var(--border-light); }
-
 /* ---------------------------------------------------------------- Panels */
-main { padding: 16px 20px 60px; max-width: 1500px; margin: 0 auto; }
+main { padding: 16px 20px 60px; min-width: 0; flex: 1; max-width: 1600px; }
 .panel { display: none; }
 .panel.active { display: block; }
 
@@ -377,3 +364,35 @@ input.invalid, select.invalid { border-color: var(--danger); }
 .dl-changed { display: inline-flex; align-items: center; gap: 8px; }
 .dl-count { background: var(--accent); color: #1a1408; border-radius: 10px; padding: 0 7px; font-size: 12px; font-weight: bold; }
 .dl-changed:disabled .dl-count { background: var(--border-light); color: var(--text-dim); }
+
+/* ---------------------------------------------------------------- Seitenleiste (Navigation) */
+.app { display: flex; align-items: flex-start; }
+.sidenav { width: 216px; flex: 0 0 216px; position: sticky; top: 63px; align-self: flex-start; height: calc(100vh - 63px); overflow-y: auto; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 12px 10px 24px; }
+.nav-toggle { display: none; width: 100%; margin-bottom: 8px; background: var(--bg-card); border: 1px solid var(--border-light); color: var(--accent); padding: 8px; border-radius: var(--radius); cursor: pointer; }
+.nav-group { margin-bottom: 14px; }
+.nav-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-faint); padding: 0 8px 4px; }
+.sidenav .tab { display: flex; align-items: center; gap: 9px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; color: var(--text-dim); padding: 7px 10px; border-radius: var(--radius); cursor: pointer; font-size: 13px; }
+.sidenav .tab .ico { width: 16px; text-align: center; color: var(--accent-dim); font-size: 14px; }
+.sidenav .tab:hover { color: var(--text); border-color: var(--border-light); }
+.sidenav .tab.active { background: var(--bg-card); color: var(--accent); border-color: var(--border-light); }
+.sidenav .tab.active .ico { color: var(--accent); }
+@media (max-width: 860px) {
+  .app { flex-direction: column; }
+  .sidenav { position: static; width: 100%; flex: none; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .nav-toggle { display: block; }
+  .nav-groups { display: none; }
+  .sidenav.open .nav-groups { display: block; }
+}
+.stat-row { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important; }
+.topbar .dl-changed { margin-left: auto; }
+
+/* ---------------------------------------------------------------- Karte & Produkt-Tabelle */
+.map-host { display: flex; flex-direction: column; gap: 8px; }
+.map-frame { width: 100%; height: calc(100vh - 150px); min-height: 560px; border: 1px solid var(--border-light); border-radius: var(--radius); background: #0b0f0c; }
+.map-hint { padding: 0 2px; }
+.table-scroll { max-height: 520px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.prod-table th { position: sticky; top: 0; background: var(--bg-card); z-index: 2; white-space: nowrap; }
+.prod-table td { padding: 3px 4px; }
+.prod-table input[type=text], .prod-table input[type=number] { padding: 4px 6px; font-size: 12px; }
+.prod-table input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent-dim); }
+.prod-editor .toolbar input[type=text] { max-width: 260px; }

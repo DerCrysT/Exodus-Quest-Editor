@@ -14,20 +14,44 @@
     <span class="brand-mark">E</span>
     <div>
       <h1>Exodus Quest Editor</h1>
-      <p>JSON-Editor für <code>ExodusQuests</code> &mdash; Quests, NPCs, Dialoge, Stashes</p>
+      <p>JSON-Editor für <code>ExodusQuests</code> &mdash; Quests, NPCs, Dialoge, Stashes, Trader &amp; Karte</p>
     </div>
   </div>
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="project">Projekt</button>
-    <button class="tab" data-tab="quest">Quest</button>
-    <button class="tab" data-tab="npc">NPC</button>
-    <button class="tab" data-tab="dialog">Dialog</button>
-    <button class="tab" data-tab="stash">Stash</button>
-    <button class="tab" data-tab="overview">NPC-Übersicht</button>
-    <button class="tab" data-tab="help">Hilfe</button>
-  </nav>
   <button class="btn primary dl-changed" id="dl-changed" type="button" title="Alle neuen/geänderten Dateien als ZIP herunterladen">Geänderte Dateien laden <span class="dl-count" id="dl-count">0</span></button>
 </header>
+
+<div class="app">
+<aside class="sidenav" id="tabs" aria-label="Navigation">
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menü">☰ Menü</button>
+  <div class="nav-groups" id="nav-groups">
+    <div class="nav-group">
+      <div class="nav-title">Projekt</div>
+      <button class="tab active" data-tab="project"><span class="ico">▤</span>Dateien &amp; Export</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-title">Quests</div>
+      <button class="tab" data-tab="quest"><span class="ico">✦</span>Quest</button>
+      <button class="tab" data-tab="npc"><span class="ico">☺</span>NPC</button>
+      <button class="tab" data-tab="dialog"><span class="ico">❝</span>Dialog</button>
+      <button class="tab" data-tab="stash"><span class="ico">▣</span>Stash</button>
+      <button class="tab" data-tab="overview"><span class="ico">⚯</span>NPC-Übersicht</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-title">Handel (XCP Trader)</div>
+      <button class="tab" data-tab="trader"><span class="ico">⚖</span>Trader</button>
+      <button class="tab" data-tab="tcat"><span class="ico">$</span>Handelskategorien</button>
+      <button class="tab" data-tab="bcat"><span class="ico">⇄</span>Tauschkategorien</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-title">Karte</div>
+      <button class="tab" data-tab="map"><span class="ico">⌖</span>Interaktive Karte</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-title">Mehr</div>
+      <button class="tab" data-tab="help"><span class="ico">?</span>Hilfe</button>
+    </div>
+  </div>
+</aside>
 
 <main id="panels">
   <section class="panel active" id="panel-project"></section>
@@ -36,6 +60,10 @@
   <section class="panel" id="panel-dialog"></section>
   <section class="panel" id="panel-stash"></section>
   <section class="panel" id="panel-overview"></section>
+  <section class="panel" id="panel-trader"></section>
+  <section class="panel" id="panel-tcat"></section>
+  <section class="panel" id="panel-bcat"></section>
+  <section class="panel" id="panel-map"></section>
 
   <section class="panel" id="panel-help">
     <div class="help-page">
@@ -55,6 +83,15 @@
       <p>Im Dialog-Tab zeigt „Ingame-Vorschau“ das Gesprächsfenster wie im Spiel. Du kannst den Spieler-Rang bei dem NPC (und bei anderen NPCs), offene
          Rückgaben und den Spielernamen einstellen und das Gespräch durchklicken &mdash; Ruf-Bedingungen, <code>Requires</code>, <code>@quests</code>,
          <code>@trade</code> und die Themenliste verhalten sich wie auf dem Server.</p>
+      <h2>Trader (XCP_Trader_V2) &amp; Karte</h2>
+      <p>Im Bereich <em>Handel</em> bearbeitest du Trader (Einträge der <code>Traders_list.json</code>), Handelskategorien
+         (<code>trader_category_list/*.json</code>) und Tauschkategorien (<code>barter_category_list/*.json</code>). Beim Laden eines
+         Projektordners wird die <code>Traders_list.json</code> automatisch in einzelne Trader aufgeteilt und beim Export wieder zusammengefügt.
+         Die Kategorie-ID ist der Dateiname &mdash; so tragen die Trader sie ein; beim Umbenennen ziehen die Trader mit. Mit „2 m neben diesen NPC setzen“
+         stellst du einen Trader neben den Dialog-NPC (wichtig für <code>@trade</code>: der Trader-Mod erlaubt höchstens 8 m).</p>
+      <p>Die <em>Interaktive Karte</em> lädt immer die DayZone-Karte und zeigt NPCs, Trader, Quest-Ziele, Spawn-Gruppen und Stashes deines Projekts als
+         Marker (Doppelklick öffnet den Eintrag im Editor). Liegen Zones-, Tiers-, Radiation- oder Anomalies-JSONs im Projektordner, werden sie
+         automatisch in der Karte angezeigt.</p>
       <h2>Hinweise</h2>
       <ul>
         <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
@@ -72,6 +109,7 @@
     </div>
   </section>
 </main>
+</div>
 
 <div class="drop-overlay" data-el="drop-overlay" hidden><div>Dateien oder Ordner hier loslassen</div></div>
 
@@ -95,6 +133,8 @@
 <script src="js/npc.js"></script>
 <script src="js/dialog.js"></script>
 <script src="js/stash.js"></script>
+<script src="js/trader.js"></script>
+<script src="js/maptab.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>

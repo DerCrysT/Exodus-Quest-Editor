@@ -24,6 +24,15 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
    `Quest/ NPC/ Dialog/ Stash/` (Unterordner bleiben erhalten), *ZIP: alles* das ganze Projekt. Unveränderte Dateien werden
    byte-genau wie geladen exportiert.
 
+8. **Trader (XCP_Trader_V2):** Bereich *Handel* in der linken Navigation – Trader (Einträge der `Traders_list.json`), Handelskategorien
+   (`trader_category_list/*.json`, Produkttabelle mit Filter, Klassen-Import und Preis-Helfern) und Tauschkategorien
+   (`barter_category_list/*.json`). Die `Traders_list.json` wird beim Laden in einzelne Trader aufgeteilt und beim Export wieder zusammengefügt;
+   die Kategorie-ID ist der Dateiname (Umbenennen zieht die Trader mit). „2 m neben diesen NPC setzen“ + Gesamtprüfung warnen, wenn ein Dialog
+   `@trade` nutzt, aber kein Trader innerhalb von 8 m steht.
+9. **Interaktive Karte:** lädt immer die DayZone-Karte (`map/`). NPCs, Trader, Quest-Ziele (Explore/Survive/Recovery/Kill/Action), Spawn-Gruppen
+   und Stashes erscheinen als Marker; Doppelklick öffnet den Eintrag im Editor. Zones-/Tiers-/Radiation-/Anomalies-JSONs aus dem Projektordner
+   werden automatisch angezeigt. Die Karten-App liegt als gebauter Stand im Ordner `map/` (Quelle: Exodus-Interaktivmap, Vite/React).
+
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
 Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).
 
@@ -59,6 +68,9 @@ js/quest.js           Quest-Editor
 js/npc.js             NPC-Editor
 js/dialog.js          Dialog-Editor inkl. NPC-Auswahl und Ingame-Vorschau
 js/stash.js           Stash-Editor
+js/trader.js          Trader-, Handels- und Tauschkategorie-Editoren
+js/maptab.js          Karten-Tab (iframe, Marker/Daten aus dem Projekt)
+map/                  Gebaute interaktive Karte inkl. DayZone_Map.webp
 js/overview.js        Projekt-Tab (Laden, Liste, Prüfung, Export) und NPC-Übersicht
 js/main.js            Tab-Umschaltung, Drag&Drop, Start
 ```

@@ -26,7 +26,7 @@ EQE.editors = EQE.editors || {};
    */
   EQE.createEditor = function (cfg) {
     const kind = cfg.kind;
-    const ID_KEY = EQE.Project.ID_KEY[kind];
+    const ID_KEY = cfg.idKey || EQE.Project.ID_KEY[kind];
     const st = { uid: null, data: null, baseline: null, lastStr: null, refId: "", view: "json" };
     const lastKey = "eqe:last:" + kind;
 
@@ -121,7 +121,7 @@ EQE.editors = EQE.editors || {};
       }
       showEmpty(false);
       st.uid = uid;
-      st.data = cfg.fromJson(item.json);
+      st.data = cfg.fromJson(item.json, item);
       st.baseline = null;
       st.lastStr = null;
       st.refId = st.data[ID_KEY] || "";
@@ -161,7 +161,10 @@ EQE.editors = EQE.editors || {};
         }
         st.lastStr = str;
         const id = st.data[ID_KEY] || "";
-        if (id && st.refId && id !== st.refId) {
+        if (cfg.metaId) {
+          // ID = Dateiname (steht nicht im JSON): am Projekt-Eintrag ändern, Verweise zieht setFileId mit
+          if (id) EQE.Project.setFileId(st.uid, id);
+        } else if (id && st.refId && id !== st.refId) {
           const n = EQE.Project.renameRefs(kind, st.refId, id, st.uid);
           if (n > 0) EQE.toast(n + " Verweis(e) auf '" + id + "' in anderen Dateien angepasst.");
         }
@@ -201,7 +204,7 @@ EQE.editors = EQE.editors || {};
 
     function createNew() {
       const json = cfg.defaultJson();
-      const item = EQE.Project.create(kind, json);
+      const item = EQE.Project.create(kind, json, cfg.defaultFileId ? cfg.defaultFileId() : undefined);
       if (cfg.afterCreate) cfg.afterCreate(item, apiObj);
       open(item.uid);
     }
@@ -209,8 +212,12 @@ EQE.editors = EQE.editors || {};
     function duplicate() {
       if (!st.uid) return;
       const copy = JSON.parse(JSON.stringify(cfg.toJson(st.data)));
-      copy[ID_KEY] = EQE.Project.uniqueId(kind, (copy[ID_KEY] || kind) + "_copy");
-      const item = EQE.Project.create(kind, copy);
+      let item;
+      if (cfg.metaId) item = EQE.Project.create(kind, copy, EQE.Project.uniqueId(kind, (st.data[ID_KEY] || kind) + "_copy"));
+      else {
+        copy[ID_KEY] = EQE.Project.uniqueId(kind, (copy[ID_KEY] || kind) + "_copy");
+        item = EQE.Project.create(kind, copy);
+      }
       if (cfg.afterCreate) cfg.afterCreate(item, apiObj);
       open(item.uid);
     }
@@ -269,7 +276,7 @@ EQE.editors = EQE.editors || {};
       open,
       reload,
       refreshSelector,
-      validateJson: (json) => cfg.validate(cfg.fromJson(json)),
+      validateJson: (json, item) => cfg.validate(cfg.fromJson(json, item)),
       currentUid: () => st.uid,
     };
     EQE.editors[kind] = editor;

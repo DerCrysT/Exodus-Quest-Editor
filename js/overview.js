@@ -16,12 +16,13 @@ window.EQE = window.EQE || {};
     root.appendChild(host);
 
     function summaryCards() {
-      const kinds = P().KINDS;
+      const core = ["quest", "npc", "dialog", "stash", "trader"];
+      const kinds = P().KINDS.filter((k) => core.indexOf(k) > -1 || P().byKind(k).length > 0);
       return h(
         "div",
         { class: "stat-row" },
         kinds
-          .map((k) => h("div", { class: "stat" }, [h("div", { class: "stat-num", text: String(P().byKind(k).length) }), h("div", { class: "stat-label", text: P().KIND_LABEL[k] + (k === "stash" ? "es" : "s") })]))
+          .map((k) => h("div", { class: "stat" }, [h("div", { class: "stat-num", text: String(P().byKind(k).length) }), h("div", { class: "stat-label", text: P().KIND_LABEL[k] })]))
           .concat([h("div", { class: "stat changed" }, [h("div", { class: "stat-num", text: String(P().changedCount()) }), h("div", { class: "stat-label", text: "neu / geändert" })])])
       );
     }
@@ -34,7 +35,7 @@ window.EQE = window.EQE || {};
           const ed = EQE.editors[it.kind];
           let local = [];
           try {
-            local = ed ? ed.validateJson(it.json) : [];
+            local = ed ? ed.validateJson(it.json, it) : [];
           } catch (e) {
             local = [{ level: "error", msg: "Datei konnte nicht geprüft werden: " + e.message }];
           }

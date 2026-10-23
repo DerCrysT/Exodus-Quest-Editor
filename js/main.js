@@ -12,6 +12,7 @@
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
     if (EQE.editors[name]) EQE.editors[name].reload();
     if (refreshers[name]) refreshers[name]();
+    document.getElementById("tabs").classList.remove("open");
     try {
       localStorage.setItem(TAB_KEY, name);
     } catch (e) {
@@ -24,6 +25,10 @@
   EQE.openItem = function (uid) {
     const item = EQE.Project.get(uid);
     if (!item) return;
+    if (!EQE.editors[item.kind]) {
+      switchTab(EQE.Project.MAP_KINDS.indexOf(item.kind) > -1 ? "map" : "project");
+      return;
+    }
     switchTab(item.kind);
     EQE.editors[item.kind].open(uid);
   };
@@ -32,6 +37,8 @@
     document.querySelectorAll(".tab").forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
 
     const project = EQE.Overview.initProject(document.getElementById("panel-project"));
+    const mapTab = EQE.MapTab.init(document.getElementById("panel-map"));
+    refreshers.map = mapTab.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
     refreshers.project = project.refresh;
     refreshers.overview = overview.refresh;
@@ -39,6 +46,14 @@
     EQE.Npc.init(document.getElementById("panel-npc"));
     EQE.Dialog.init(document.getElementById("panel-dialog"));
     EQE.Stash.init(document.getElementById("panel-stash"));
+    EQE.Trader.initTrader(document.getElementById("panel-trader"));
+    EQE.Trader.initTcat(document.getElementById("panel-tcat"));
+    EQE.Trader.initBcat(document.getElementById("panel-bcat"));
+
+    // Menü auf schmalen Bildschirmen ein-/ausklappen
+    const navToggle = document.getElementById("nav-toggle");
+    const sidenav = document.getElementById("tabs");
+    navToggle.addEventListener("click", () => sidenav.classList.toggle("open"));
 
     // Drag&Drop über das ganze Fenster
     const overlay = document.querySelector('[data-el="drop-overlay"]');

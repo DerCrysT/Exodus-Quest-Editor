@@ -11,11 +11,17 @@ window.EQE = window.EQE || {};
 (function (EQE) {
   "use strict";
 
-  const KINDS = ["quest", "npc", "dialog", "stash"];
-  const ID_KEY = { quest: "QuestId", npc: "NpcId", dialog: "DialogId", stash: "StashId" };
-  const NAME_KEY = { quest: "Title", npc: "Name", dialog: "Title", stash: "Mode" };
-  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash" };
-  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash" };
+  // Bearbeitbar: quest, npc, dialog, stash, trader, tcat (Handelskategorie), bcat (Tauschkategorie).
+  // Nur Anzeige/Durchreichen: zones, tiers, radiation, anomalies (Karte) und tsettings (Trader-Hauptsettings).
+  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"];
+  const ID_KEY = { quest: "QuestId", npc: "NpcId", dialog: "DialogId", stash: "StashId", trader: "trader_id" };
+  // Dateien ohne ID im JSON: die ID ist der Dateiname (ohne .json) – bei Kategorien so von den Tradern referenziert
+  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"];
+  const NAME_KEY = { quest: "Title", npc: "Name", dialog: "Title", stash: "Mode", trader: "trader_name", tcat: "name_category", bcat: "name_category" };
+  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map" };
+  const FOLDER_MARKER = { tcat: "trader_category_list", bcat: "barter_category_list" };
+  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings" };
+  const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
   let items = [];
@@ -60,22 +66,50 @@ window.EQE = window.EQE || {};
     return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
-  /** Dateityp an der Struktur erkennen; null = unbekannt (z. B. Config.json, Spielerdaten). */
-  function classify(j) {
-    if (!j || typeof j !== "object" || Array.isArray(j)) return null;
+  /** Dateityp an der Struktur erkennen; null = unbekannt (z. B. Config.json, Spielerdaten). "traders_file" = Traders_list.json. */
+  function classify(j, path) {
+    const hint = String(path || "").toLowerCase();
+    if (Array.isArray(j)) {
+      const f = j[0];
+      if (f && typeof f === "object") {
+        if (f.spawnPoints || f.SpawnPoints || f.triggerRadius !== undefined || f.TriggerRadius !== undefined) return "zones";
+        if (f.radiationCenter || f.RadiationCenter || f.intensityMax !== undefined || f.IntensityMax !== undefined) return "radiation";
+      }
+      return null;
+    }
+    if (!j || typeof j !== "object") return null;
     if (typeof j.DialogId === "string" && Array.isArray(j.Nodes)) return "dialog";
     if (typeof j.QuestId === "string" && (Array.isArray(j.Objectives) || j.QuestType !== undefined)) return "quest";
     if (typeof j.StashId === "string") return "stash";
     if (typeof j.NpcId === "string" && (j.Name !== undefined || j.Position !== undefined)) return "npc";
+    if (Array.isArray(j.Traders)) return "traders_file";
+    if (j.name_category !== undefined && Array.isArray(j.products)) {
+      const first = j.products[0];
+      if (first && first.received_classname !== undefined) return "bcat";
+      if (first) return "tcat";
+      return hint.indexOf("barter") > -1 ? "bcat" : "tcat";
+    }
+    if (Array.isArray(j.currency_list)) return "tsettings";
+    if (j.teleportAnomaly || j.dynamicAnomaly || j.staticAnomaly) return "anomalies";
+    if (j.RadiationZones || j.radiationZones) return "radiation";
+    if (j.Zones || j.zones || j.spawnZones || j.SpawnZones) return hint.indexOf("radiation") > -1 ? "radiation" : "zones";
+    if (j.tiers || j.Tiers) return "tiers";
+    const vals = Object.values(j);
+    if (vals.length && vals.every((v) => v && typeof v === "object" && (Array.isArray(v.classnames) || Array.isArray(v.Classnames)))) return "tiers";
     return null;
   }
 
   function idOf(item) {
+    if (FILEID_KINDS.indexOf(item.kind) > -1) return item.fileId || "";
     const v = item.json[ID_KEY[item.kind]];
     return typeof v === "string" ? v : "";
   }
+  function fileIdFromPath(path) {
+    const base = String(path || "").split("/").pop().replace(/\.json$/i, "");
+    return base;
+  }
   function nameOf(item) {
-    const v = item.json[NAME_KEY[item.kind]];
+    const v = item.json && NAME_KEY[item.kind] ? item.json[NAME_KEY[item.kind]] : "";
     return typeof v === "string" ? v : "";
   }
   function labelOf(item) {
@@ -106,7 +140,8 @@ window.EQE = window.EQE || {};
 
   function add(kind, json, opts) {
     opts = opts || {};
-    const id = typeof json[ID_KEY[kind]] === "string" ? json[ID_KEY[kind]] : "";
+    const fileBased = FILEID_KINDS.indexOf(kind) > -1;
+    const id = fileBased ? opts.fileId || fileIdFromPath(opts.path) : typeof json[ID_KEY[kind]] === "string" ? json[ID_KEY[kind]] : "";
     let item = id && !opts.isNew ? find(kind, id) : null;
     let replaced = false;
     if (item) {
@@ -118,6 +153,7 @@ window.EQE = window.EQE || {};
       item.isNew = false;
     } else {
       item = { uid: uid(), kind, path: opts.path || null, json, rawText: opts.rawText || null, dirty: false, isNew: !!opts.isNew };
+      if (fileBased) item.fileId = id;
       items.push(item);
     }
     persist();
@@ -133,8 +169,25 @@ window.EQE = window.EQE || {};
     return base + "_" + n;
   }
 
-  function create(kind, json) {
-    return add(kind, json, { isNew: true }).item;
+  function create(kind, json, fileId) {
+    return add(kind, json, { isNew: true, fileId }).item;
+  }
+
+  /** Datei-ID (Dateiname) von Kategorien u. Ä. ändern; Verweise der Trader ziehen mit. */
+  function setFileId(uidValue, newId) {
+    const it = get(uidValue);
+    if (!it || it.fileId === newId) return;
+    const old = it.fileId;
+    it.fileId = newId;
+    it.dirty = true;
+    if (old && newId && (it.kind === "tcat" || it.kind === "bcat")) {
+      const field = it.kind === "tcat" ? "category_list_trader" : "category_list_barter";
+      byKind("trader").forEach((t) => {
+        if (replaceInArray(t.json[field], old, newId) > 0) t.dirty = true;
+      });
+    }
+    persist();
+    emit({ type: "json", uid: uidValue });
   }
 
   function setJson(id, json) {
@@ -243,6 +296,7 @@ window.EQE = window.EQE || {};
     return n;
   }
 
+  /** (Datei-ID-Kinder werden über setFileId umbenannt.) */
   /** Eine ID wurde geändert: alle Verweise in den anderen Dateien auf die neue ID umstellen. */
   function renameRefs(kind, oldId, newId, selfUid) {
     if (!oldId || !newId || oldId === newId) return 0;
@@ -397,12 +451,58 @@ window.EQE = window.EQE || {};
       const myId = idOf(it);
       if (byKind("quest").length > 0 && myId && !usedStashes.has(myId)) push("warn", it, "Wird von keiner Quest verwendet.");
     });
+
+    // ---- Trader / Kategorien
+    const tcatIds = new Set(ids("tcat"));
+    const bcatIds = new Set(ids("bcat"));
+    const currencyIds = new Set();
+    byKind("tsettings").forEach((it) => (it.json.currency_list || []).forEach((c) => c && c.currency_id && currencyIds.add(c.currency_id)));
+    const usedT = new Set();
+    const usedB = new Set();
+    byKind("trader").forEach((it) => {
+      const j = it.json;
+      (j.category_list_trader || []).forEach((c) => {
+        usedT.add(c);
+        if (tcatIds.size && !tcatIds.has(c)) push("error", it, "Handelskategorie '" + c + "' existiert nicht im Projekt (Datei trader_category_list/" + c + ".json).");
+      });
+      (j.category_list_barter || []).forEach((c) => {
+        usedB.add(c);
+        if (bcatIds.size && !bcatIds.has(c)) push("error", it, "Tauschkategorie '" + c + "' existiert nicht im Projekt (Datei barter_category_list/" + c + ".json).");
+      });
+      if (currencyIds.size && j.currency_id && !currencyIds.has(j.currency_id)) push("error", it, "Währung '" + j.currency_id + "' steht nicht in trader_main_setting.json.");
+    });
+    byKind("tcat").forEach((it) => {
+      if (byKind("trader").length && idOf(it) && !usedT.has(idOf(it))) push("warn", it, "Wird von keinem Trader verwendet.");
+    });
+    byKind("bcat").forEach((it) => {
+      if (byKind("trader").length && idOf(it) && !usedB.has(idOf(it))) push("warn", it, "Wird von keinem Trader verwendet.");
+    });
+
+    // ---- @trade im Dialog: Der Trader muss in der Nähe des Dialog-NPCs stehen (Trader-Mod: max. 8 m zum Spieler)
+    const traderPos = byKind("trader").map((t) => ({ t, p: t.json.position })).filter((x) => Array.isArray(x.p) && x.p.length >= 3);
+    byKind("npc").forEach((it) => {
+      const usesTrade = (it.json.Dialogs || []).some((d) => {
+        const di = find("dialog", d);
+        return di && (di.json.Nodes || []).some((n) => (n.Options || []).some((o) => typeof o.Next === "string" && o.Next.indexOf("@trade") === 0));
+      });
+      if (!usesTrade) return;
+      if (!traderPos.length) {
+        if (byKind("trader").length || byKind("dialog").length) push("warn", it, "Ein Dialog öffnet mit @trade den Handel, aber es gibt keinen Trader im Projekt.");
+        return;
+      }
+      const pp = String(it.json.Position || "").trim().split(/\s+/).map(Number);
+      if (pp.length < 3 || pp.some(isNaN)) return;
+      const near = traderPos.some((x) => Math.hypot(x.p[0] - pp[0], x.p[2] - pp[2]) <= 8);
+      if (!near) push("warn", it, "Ein Dialog öffnet mit @trade den Handel, aber kein Trader steht innerhalb von 8 m um diesen NPC (der Trader-Mod prüft die Distanz).");
+    });
     return issues;
   }
 
   // ---------------------------------------------------------------- Einlesen
   async function readEntries(entries) {
-    const result = { counts: { quest: 0, npc: 0, dialog: 0, stash: 0 }, replaced: 0, unknown: [], errors: [] };
+    const counts = {};
+    KINDS.forEach((k) => (counts[k] = 0));
+    const result = { counts, replaced: 0, unknown: [], errors: [] };
     for (const e of entries) {
       const name = e.path || e.file.name;
       if (!/\.json$/i.test(name)) continue;
@@ -411,9 +511,18 @@ window.EQE = window.EQE || {};
         text = await e.file.text();
         text = text.replace(/^﻿/, "");
         const json = JSON.parse(text);
-        const kind = classify(json);
+        const kind = classify(json, name);
         if (!kind) {
           result.unknown.push(name);
+          continue;
+        }
+        if (kind === "traders_file") {
+          json.Traders.forEach((t) => {
+            if (!t || typeof t !== "object") return;
+            const r = add("trader", t, { path: name });
+            result.counts.trader++;
+            if (r.replaced) result.replaced++;
+          });
           continue;
         }
         const r = add(kind, json, { path: name, rawText: text });
@@ -473,7 +582,7 @@ window.EQE = window.EQE || {};
   function summary(r) {
     const parts = [];
     KINDS.forEach((k) => {
-      if (r.counts[k]) parts.push(r.counts[k] + " " + KIND_LABEL[k] + (r.counts[k] === 1 ? "" : "s"));
+      if (r.counts[k]) parts.push(r.counts[k] + " " + KIND_LABEL[k]);
     });
     let msg = parts.length ? parts.join(", ") + " geladen" : "Keine passenden Dateien gefunden";
     if (r.replaced) msg += " (" + r.replaced + " vorhandene ersetzt)";
@@ -551,12 +660,15 @@ window.EQE = window.EQE || {};
 
   function exportPath(item) {
     const folder = FOLDER[item.kind];
-    if (item.path) {
+    const fileBased = FILEID_KINDS.indexOf(item.kind) > -1;
+    const marker = FOLDER_MARKER[item.kind] || folder.split("/").pop();
+    if (item.path && !(fileBased && item.fileId && fileIdFromPath(item.path) !== item.fileId)) {
       const segs = item.path.split("/").filter((x) => x);
-      const idx = segs.findIndex((s) => s.toLowerCase() === folder.toLowerCase());
+      const idx = segs.findIndex((s) => s.toLowerCase() === marker.toLowerCase());
       if (idx > -1 && idx < segs.length - 1) return folder + "/" + segs.slice(idx + 1).join("/");
       return folder + "/" + segs[segs.length - 1];
     }
+    if (item.kind === "trader") return folder + "/Traders_list.json";
     return folder + "/" + (idOf(item) || "unbenannt") + ".json";
   }
 
@@ -568,7 +680,14 @@ window.EQE = window.EQE || {};
   function exportZip(onlyChanged) {
     const used = new Set();
     const files = [];
+    // Alle Trader gehören in EINE Datei (Traders_list.json)
+    const traders = byKind("trader");
+    if (traders.length && (!onlyChanged || traders.some(isChanged))) {
+      files.push({ name: exportPath(traders[0]), text: JSON.stringify({ Traders: traders.map((t) => t.json) }, null, 2) + "\n" });
+      used.add(exportPath(traders[0]).toLowerCase());
+    }
     items.forEach((it) => {
+      if (it.kind === "trader") return;
       if (onlyChanged && !isChanged(it)) return;
       let name = exportPath(it);
       while (used.has(name.toLowerCase())) name = name.replace(/\.json$/i, "") + "_" + it.uid.slice(-3) + ".json";
@@ -610,7 +729,7 @@ window.EQE = window.EQE || {};
     input.addEventListener("change", async () => {
       const r = await readEntries(entriesFromFileList(input.files));
       input.remove();
-      EQE.toast(summary(r), !(r.counts.quest + r.counts.npc + r.counts.dialog + r.counts.stash));
+      EQE.toast(summary(r), !KINDS.some((k) => r.counts[k]));
       emit({ type: "ingest", result: r });
     });
     input.click();
@@ -619,7 +738,7 @@ window.EQE = window.EQE || {};
   async function ingestDrop(dataTransfer) {
     const entries = await entriesFromDrop(dataTransfer);
     const r = await readEntries(entries);
-    EQE.toast(summary(r), !(r.counts.quest + r.counts.npc + r.counts.dialog + r.counts.stash));
+    EQE.toast(summary(r), !KINDS.some((k) => r.counts[k]));
     emit({ type: "ingest", result: r });
     return r;
   }
@@ -627,9 +746,10 @@ window.EQE = window.EQE || {};
   /** Einzelnes JSON aus Text (Einfügen): Typ erkennen, ins Projekt aufnehmen. */
   function ingestText(text) {
     const json = JSON.parse(text.replace(/^﻿/, ""));
-    const kind = classify(json);
-    if (!kind) throw new Error("Unbekanntes Format (weder Quest, NPC, Dialog noch Stash).");
-    const r = add(kind, json, { rawText: null });
+    const kind = classify(json, "");
+    if (!kind) throw new Error("Unbekanntes Format (weder Quest, NPC, Dialog, Stash noch Trader/Kategorie).");
+    if (kind === "traders_file") throw new Error("Das ist eine komplette Traders_list.json - bitte über Dateien laden einlesen.");
+    const r = add(kind, json, { rawText: null, fileId: FILEID_KINDS.indexOf(kind) > -1 ? uniqueId(kind, "eingefuegt") : undefined });
     r.item.dirty = true;
     return { kind, item: r.item, replaced: r.replaced };
   }
@@ -655,6 +775,9 @@ window.EQE = window.EQE || {};
     options,
     add,
     create,
+    setFileId,
+    FILEID_KINDS,
+    MAP_KINDS,
     uniqueId,
     setJson,
     mutate,
