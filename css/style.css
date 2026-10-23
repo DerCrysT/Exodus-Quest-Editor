@@ -373,3 +373,7 @@ input.invalid, select.invalid { border-color: var(--danger); }
 .game-opts { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 5px; }
 .game-opt { text-align: left; background: linear-gradient(180deg, #1c1b16, #14130f); border: 1px solid #3b3326; color: #ece8dc; font-family: var(--serif); font-size: 15px; padding: 8px 12px; cursor: pointer; border-radius: 2px; }
 .game-opt:hover { border-color: #d9a359; color: #fff; background: #25231a; }
+
+.dl-changed { display: inline-flex; align-items: center; gap: 8px; }
+.dl-count { background: var(--accent); color: #1a1408; border-radius: 10px; padding: 0 7px; font-size: 12px; font-weight: bold; }
+.dl-changed:disabled .dl-count { background: var(--border-light); color: var(--text-dim); }

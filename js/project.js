@@ -578,6 +578,23 @@ window.EQE = window.EQE || {};
     return { blob: buildZip(files), count: files.length };
   }
 
+  function downloadZip(onlyChanged) {
+    const r = exportZip(onlyChanged);
+    if (!r.count) {
+      EQE.toast(onlyChanged ? "Nichts geändert – es gibt nichts zu exportieren." : "Das Projekt ist leer.", true);
+      return;
+    }
+    const url = URL.createObjectURL(r.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = onlyChanged ? "exodus-quests-geaendert.zip" : "exodus-quests-projekt.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    EQE.toast(r.count + " Datei(en) exportiert.");
+  }
+
   // ---------------------------------------------------------------- Datei-Dialoge
   function pick(folder) {
     const input = document.createElement("input");
@@ -652,6 +669,7 @@ window.EQE = window.EQE || {};
     ingestDrop,
     ingestText,
     exportZip,
+    downloadZip,
     exportPath,
     changedCount: () => items.filter(isChanged).length,
   };

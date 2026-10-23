@@ -53,20 +53,7 @@ window.EQE = window.EQE || {};
       render();
     }
 
-    function downloadZip(onlyChanged) {
-      const r = P().exportZip(onlyChanged);
-      if (!r.count) {
-        EQE.toast(onlyChanged ? "Nichts geändert – es gibt nichts zu exportieren." : "Das Projekt ist leer.", true);
-        return;
-      }
-      const url = URL.createObjectURL(r.blob);
-      const a = h("a", { href: url, download: onlyChanged ? "exodus-quests-geaendert.zip" : "exodus-quests-projekt.zip" });
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
-      EQE.toast(r.count + " Datei(en) exportiert.");
-    }
+    const downloadZip = (onlyChanged) => P().downloadZip(onlyChanged);
 
     function tableBody() {
       const f = pstate.filter.toLowerCase();

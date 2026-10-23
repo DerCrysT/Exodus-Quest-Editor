@@ -66,6 +66,18 @@
       switchTab("project");
     });
 
+    // Globaler Button: alle neuen/geänderten Dateien als ZIP
+    const dlBtn = document.getElementById("dl-changed");
+    const dlCount = document.getElementById("dl-count");
+    const updateCount = () => {
+      const n = EQE.Project.changedCount();
+      dlCount.textContent = String(n);
+      dlBtn.disabled = n === 0;
+    };
+    dlBtn.addEventListener("click", () => EQE.Project.downloadZip(true));
+    EQE.Project.on(updateCount);
+    updateCount();
+
     // Nach dem Laden von Dateien zur Projekt-Übersicht springen
     EQE.Project.on((ev) => {
       if (ev.type === "ingest") switchTab("project");
