@@ -31,7 +31,7 @@ window.EQE = window.EQE || {};
       { key: "CenterY", label: "CenterY", type: "number" },
       { key: "CenterZ", label: "CenterZ", type: "number" },
       { key: "ResetOnLeave", label: "ResetOnLeave", type: "bool", help: "Braucht Radius/Center: verlässt der Spieler den Kreis, setzt sich der Fortschritt zurück." },
-      { key: "SpawnId", label: "SpawnId", type: "text", help: "Optional: nur Gegner dieser Spawn-Gruppe der Quest zählen." },
+      { key: "SpawnId", label: "SpawnId", type: "text", ref: "spawn", help: "Optional: nur Gegner dieser Spawn-Gruppe der Quest zählen." },
       { key: "KillMethod", label: "KillMethod", type: "select", options: ["", "Any", "Melee", "Ranged"], help: "Default Any." },
       { key: "WeaponClass", label: "WeaponClass", type: "text", help: "Optional, mehrere Komma-getrennt möglich." },
     ],
@@ -44,7 +44,7 @@ window.EQE = window.EQE || {};
       { key: "RemoveOnComplete", label: "RemoveOnComplete", type: "bool", default: true, help: "Default an – Items werden bei Abgabe entfernt." },
     ],
     DeliverContainer: [
-      { key: "StashId", label: "StashId", type: "text", required: true, help: "Stash aus dem Stash-Pool (Mode Container empfohlen)." },
+      { key: "StashId", label: "StashId", type: "text", required: true, ref: "stash", help: "Stash aus dem Stash-Pool (Mode Container empfohlen)." },
       { key: "ItemClass", label: "ItemClass", type: "text", required: true, help: "Abzugebende Klasse(n), mehrere Komma-getrennt (zählen zusammen)." },
       { key: "ConfirmAction", label: "ConfirmAction", type: "bool", default: true, help: "Default an: Bestätigung per F an der Kiste nötig. Aus = automatisch bei genug Items." },
       { key: "KeepSeconds", label: "KeepSeconds", type: "number", help: "Wie lange die geleerte Kiste nach Abgabe stehen bleibt (Default 600)." },
@@ -75,7 +75,7 @@ window.EQE = window.EQE || {};
       { key: "CenterY", label: "CenterY", type: "number" },
       { key: "CenterZ", label: "CenterZ", type: "number" },
     ],
-    LootStash: [{ key: "StashId", label: "StashId", type: "text", required: true }],
+    LootStash: [{ key: "StashId", label: "StashId", type: "text", required: true, ref: "stash" }],
     Recovery: [
       { key: "ItemClass", label: "ItemClass", type: "text", required: true, help: "Klasse des Questitems." },
       { key: "X", label: "X", type: "number", required: true },
@@ -152,4 +152,41 @@ window.EQE = window.EQE || {};
   EQE.STASH_MODES = ["Container", "Hidden", "Ground"];
   EQE.NPC_MODES = ["NPC", "Bubble"];
   EQE.CATEGORY_SUGGESTIONS = ["Story", "Side", "Daily"];
+
+  // TargetValue bedeutet je Objective-Typ etwas anderes (Tooltip + Einheit am Feld)
+  EQE.TARGET_VALUE_HELP = {
+    Kill: { unit: "Anzahl Kills", tip: "Wie viele Gegner getötet werden müssen. Gezählt wird nur, was zu TargetClass/Radius/SpawnId/KillMethod passt." },
+    Collect: { unit: "Anzahl Items", tip: "Benötigte Anzahl Items im Inventar. Alle Klassen aus ItemClass zählen zusammen." },
+    Deliver: { unit: "Anzahl Items", tip: "Anzahl abzugebender Items (alle Klassen aus ItemClass zählen zusammen)." },
+    DeliverContainer: { unit: "Anzahl Items", tip: "Anzahl Items, die in die Quest-Kiste gelegt werden müssen." },
+    Fish: { unit: "Anzahl Fische", tip: "Wie viele Fische gefangen werden müssen." },
+    Harvest: { unit: "Anzahl", tip: "Wie oft geerntet/gesammelt werden muss (zählt Aktionen bzw. Items je nach Mod-Event)." },
+    Craft: { unit: "Anzahl", tip: "Wie oft das Item erfolgreich hergestellt werden muss." },
+    Explore: { unit: "wird automatisch gesetzt", tip: "Beim Explore setzt der Mod TargetValue automatisch auf die Anzahl der Wegpunkte. Der eingetragene Wert wird ignoriert – bitte trotzdem mindestens 1 stehen lassen." },
+    Action: { unit: "Anzahl Ausführungen", tip: "Wie oft die Action ausgeführt werden muss." },
+    LootStash: { unit: "Anzahl Items", tip: "Wie viele Items aus dem Stash entnommen werden müssen." },
+    Recovery: { unit: "normalerweise 1", tip: "Recovery spawnt genau ein Questitem – TargetValue ist normalerweise 1." },
+    Survive: { unit: "Dauer in SEKUNDEN", tip: "Beim Survive ist TargetValue die benötigte Zeit in Sekunden (600 = 10 Minuten, 3600 = 1 Stunde). Der alte Parameter 'Seconds' wird ignoriert." },
+  };
+
+  // Rang-Grenzen (siehe EQ_ReputationRanks.AddRank im Mod)
+  EQE.RANK_BOUNDS = {
+    brotherinarms: [1000, 1000], ally: [750, 999], friend: [500, 749], associate: [250, 499], acquaintance: [100, 249],
+    neutral: [-99, 99], suspicious: [-249, -100], disliked: [-499, -250], enemy: [-749, -500], wanted: [-999, -750], executiontarget: [-1000, -1000],
+  };
+  /** [lo, hi] eines EQ_RepRange wie im Mod (0 = nicht gesetzt, Ränge überschreiben Min/Max). */
+  EQE.rangeBounds = function (range) {
+    let lo = range.Min || -1000;
+    let hi = range.Max || 1000;
+    const a = range.MinRank && EQE.findRank(range.MinRank);
+    const b = range.MaxRank && EQE.findRank(range.MaxRank);
+    if (a) lo = EQE.RANK_BOUNDS[a.id][0];
+    if (b) hi = EQE.RANK_BOUNDS[b.id][1];
+    return [lo, hi];
+  };
+  EQE.inRepRange = function (range, value) {
+    if (!range) return true;
+    const [lo, hi] = EQE.rangeBounds(range);
+    return value >= lo && value <= hi;
+  };
 })(window.EQE);

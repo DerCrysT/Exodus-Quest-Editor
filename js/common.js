@@ -63,7 +63,10 @@ window.EQE = window.EQE || {};
    * Liest/schreibt obj[key] direkt; ruft onChange(value) nach jeder Änderung (für Live-Vorschau).
    */
   EQE.field = function (opts) {
-    const { label, key, type, obj, help, required, placeholder, options, step, span, onChange, datalist } = opts;
+    const { label, key, type, obj, help, required, placeholder, options, step, span, onChange, tip } = opts;
+    // datalist darf ein Array (Strings oder {value,label}) oder eine Funktion sein, die es liefert
+    const datalist = typeof opts.datalist === "function" ? opts.datalist() : opts.datalist;
+    const tipNode = tip ? h("span", { class: "tip", "data-tip": tip, tabindex: "0", text: "?" }) : null;
     let input;
     const fire = () => {
       if (typeof onChange === "function") onChange(obj[key]);
@@ -126,10 +129,10 @@ window.EQE = window.EQE || {};
         const dl = h(
           "datalist",
           { id: dlId },
-          datalist.map((d) => h("option", { value: d }))
+          datalist.map((d) => h("option", typeof d === "string" ? { value: d } : { value: d.value, label: d.label }))
         );
         const wrap = h("div", { class: "field" + (span ? " span" + span : "") }, [
-          h("label", {}, [label, required ? h("span", { class: "req", text: "*" }) : null]),
+          h("label", {}, [label, required ? h("span", { class: "req", text: "*" }) : null, tipNode]),
           input,
           dl,
           help ? h("div", { class: "help", text: help }) : null,
@@ -138,7 +141,7 @@ window.EQE = window.EQE || {};
       }
     }
     return h("div", { class: "field" + (span ? " span" + span : "") }, [
-      h("label", {}, [label, required ? h("span", { class: "req", text: "*" }) : null]),
+      h("label", {}, [label, required ? h("span", { class: "req", text: "*" }) : null, tipNode]),
       input,
       help ? h("div", { class: "help", text: help }) : null,
     ]);
@@ -172,6 +175,7 @@ window.EQE = window.EQE || {};
   EQE.strList = function (opts) {
     const { items, placeholder, onChange } = opts;
     const wrap = h("div", { class: "strlist" });
+    const dlId = opts.datalist ? EQE.uid() : null;
     const render = () => {
       clear(wrap);
       items.forEach((val, i) => {
@@ -190,8 +194,13 @@ window.EQE = window.EQE || {};
           ])
         );
       });
+      const dlItems = typeof opts.datalist === "function" ? opts.datalist() : opts.datalist;
+      if (dlId) {
+        wrap.appendChild(h("datalist", { id: dlId }, (dlItems || []).map((d) => h("option", typeof d === "string" ? { value: d } : { value: d.value, label: d.label }))));
+      }
       const addInput = h("input", {
         type: "text",
+        list: dlId || undefined,
         placeholder: placeholder || "hinzufügen…",
         onkeydown: (e) => {
           if (e.key === "Enter") {
@@ -423,7 +432,7 @@ window.EQE = window.EQE || {};
       if (!active) return;
       const r = holder[key];
       const body = h("div", { class: "grid4", style: "margin-top:8px" });
-      body.appendChild(EQE.field({ label: "NpcId", key: "NpcId", obj: r, type: "text", placeholder: "leer = aktueller NPC", onChange: () => opts.onChange && opts.onChange() }));
+      body.appendChild(EQE.field({ label: "NpcId", key: "NpcId", obj: r, type: "text", placeholder: "leer = aktueller NPC", datalist: () => (EQE.Project ? EQE.Project.options("npc") : []), onChange: () => opts.onChange && opts.onChange() }));
       body.appendChild(EQE.field({ label: "MinRank", key: "MinRank", obj: r, type: "select", options: rankOptions, onChange: () => opts.onChange && opts.onChange() }));
       body.appendChild(EQE.field({ label: "MaxRank", key: "MaxRank", obj: r, type: "select", options: rankOptions, onChange: () => opts.onChange && opts.onChange() }));
       if (opts.showLocked) {

@@ -52,58 +52,26 @@ window.EQE = window.EQE || {};
     return { Logic: "AND", Objectives: [], Children: [] };
   }
 
-  let st = null; // { data, root, els:{form,preview,issues,status}, refreshCond }
+  const st = { data: null, refreshCond: null };
+  let preview = () => {};
 
   function init(root) {
-    st = { data: loadDraft("quest") || defaultQuest(), root, els: {}, refreshCond: null };
-    st.els.form = root.querySelector('[data-el="form"]');
-    st.els.preview = root.querySelector('[data-el="preview"]');
-    st.els.issues = root.querySelector('[data-el="issues"]');
-    st.els.status = root.querySelector('[data-el="status"]');
-    wireToolbar(root);
-    buildForm();
-  }
-
-  // ---------------------------------------------------------------- Toolbar
-  function wireToolbar(root) {
-    root.querySelector('[data-act="new"]').addEventListener("click", () => {
-      if (!confirm("Neues, leeres Quest-Formular? Nicht exportierte Eingaben gehen verloren.")) return;
-      st.data = defaultQuest();
-      buildForm();
+    return EQE.createEditor({
+      kind: "quest",
+      root,
+      title: "Quest",
+      defaultJson: () => {
+        const j = buildOutput(defaultQuest());
+        j.QuestId = EQE.Project.uniqueId("quest", "quest_new");
+        j.Title = "Neue Quest";
+        return j;
+      },
+      fromJson: normalizeImported,
+      toJson: buildOutput,
+      buildForm,
+      validate: validateQuest,
+      status: (d) => (d.QuestId || "(ohne Id)") + " · " + d.Objectives.length + " Objective(s) · " + d.Rewards.length + " Reward(s)",
     });
-    const fileInput = root.querySelector('[data-act="import-file"]');
-    root.querySelector('[data-act="import"]').addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => tryImport(reader.result);
-      reader.readAsText(file);
-      e.target.value = "";
-    });
-    root.querySelector('[data-act="paste"]').addEventListener("click", () => {
-      const ta = h("textarea", { placeholder: "Quest-JSON hier einfügen…" });
-      const btn = h("button", { class: "btn primary", type: "button", text: "Übernehmen", onclick: () => { tryImport(ta.value); closeModal(); } });
-      openModal("Quest-JSON einfügen", h("div", {}, [ta, h("div", { style: "margin-top:10px" }, [btn])]));
-    });
-    root.querySelector('[data-act="validate"]').addEventListener("click", () => {
-      renderIssues(st.els.issues, validateQuest(st.data));
-    });
-    root.querySelector('[data-act="copy"]').addEventListener("click", () => copyText(JSON.stringify(buildOutput(st.data), null, 2)));
-    root.querySelector('[data-act="download"]').addEventListener("click", () => {
-      download((st.data.QuestId || "quest") + ".json", JSON.stringify(buildOutput(st.data), null, 2));
-    });
-  }
-
-  function tryImport(text) {
-    try {
-      const obj = JSON.parse(text);
-      st.data = normalizeImported(obj);
-      buildForm();
-      toast("Quest geladen.");
-    } catch (e) {
-      toast("Ungültiges JSON: " + e.message, true);
-    }
   }
 
   function normalizeImported(obj) {
@@ -125,15 +93,16 @@ window.EQE = window.EQE || {};
   }
 
   // ---------------------------------------------------------------- Formular
-  function buildForm() {
-    const d = st.data;
-    const form = st.els.form;
-    clear(form);
+  function buildForm(d, ctx) {
+    st.data = d;
+    preview = ctx.changed;
+    const form = ctx.form;
+    let assignSec = null;
 
     form.appendChild(
       section("Grunddaten", "QuestId, Titel, Beschreibung, Einordnung", [
         h("div", { class: "grid2" }, [
-          field({ label: "QuestId", key: "QuestId", obj: d, type: "text", required: true, help: "Eindeutig; der Dateiname ist frei wählbar.", onChange: preview }),
+          field({ label: "QuestId", key: "QuestId", obj: d, type: "text", required: true, help: "Eindeutig; der Dateiname ist frei wählbar. Beim Umbenennen werden Verweise in anderen Dateien mitgezogen.", onChange: () => { assignSec && assignSec._render(); preview(); } }),
           field({ label: "QuestType", key: "QuestType", obj: d, type: "text", required: true, datalist: EQE.OBJECTIVE_TYPES.concat(["Mixed"]), help: "Frei wählbar, z. B. gleich dem Objective-Typ oder 'Mixed'.", onChange: preview }),
         ]),
         field({ label: "Title", key: "Title", obj: d, type: "text", required: true, onChange: preview }),
@@ -143,9 +112,15 @@ window.EQE = window.EQE || {};
           field({ label: "Category", key: "Category", obj: d, type: "text", datalist: EQE.CATEGORY_SUGGESTIONS, onChange: preview }),
           field({ label: "Location", key: "Location", obj: d, type: "text", onChange: preview }),
         ]),
-        field({ label: "TurnInNpcId", key: "TurnInNpcId", obj: d, type: "text", help: "Leer = Abgabe beim Questgeber (dem NPC, bei dem angenommen wurde).", onChange: preview }),
+        field({ label: "TurnInNpcId", key: "TurnInNpcId", obj: d, type: "text", datalist: () => EQE.Project.options("npc"), help: "Leer = Abgabe beim Questgeber (dem NPC, bei dem angenommen wurde).", onChange: preview }),
       ])
     );
+
+    assignSec = EQE.assignSection("Zuweisung an NPCs", "Welcher NPC bietet diese Quest an?", () => d.QuestId, [
+      { field: "Quests", label: "Feste Quest von" },
+      { field: "DailyPool", label: "Im Daily-Pool von" },
+    ]);
+    form.appendChild(assignSec);
 
     form.appendChild(
       section("Verhalten", "Wiederholbar, Story/Daily, Zeitlimit, Cooldown", [
@@ -168,8 +143,8 @@ window.EQE = window.EQE || {};
         "Verkettung",
         "Voraussetzungen und Folgequests (QuestIds)",
         [
-          h("div", { class: "field" }, [h("label", {}, "PreQuests"), strList({ items: d.PreQuests, placeholder: "QuestId + Enter", onChange: preview })]),
-          h("div", { class: "field" }, [h("label", {}, "NextQuests"), strList({ items: d.NextQuests, placeholder: "QuestId + Enter", onChange: preview })]),
+          h("div", { class: "field" }, [h("label", {}, "PreQuests"), strList({ items: d.PreQuests, placeholder: "QuestId + Enter", datalist: () => EQE.Project.options("quest"), onChange: preview })]),
+          h("div", { class: "field" }, [h("label", {}, "NextQuests"), strList({ items: d.NextQuests, placeholder: "QuestId + Enter", datalist: () => EQE.Project.options("quest"), onChange: preview })]),
         ],
         { collapsed: d.PreQuests.length === 0 && d.NextQuests.length === 0 }
       )
@@ -234,14 +209,13 @@ window.EQE = window.EQE || {};
           h("div", { class: "grid3" }, [
             field({ label: "ReputationLossOnAbandon", key: "ReputationLossOnAbandon", obj: d, type: "number", onChange: preview }),
             field({ label: "ReputationLossOnFail", key: "ReputationLossOnFail", obj: d, type: "number", onChange: preview }),
-            field({ label: "ReputationLossNpcId", key: "ReputationLossNpcId", obj: d, type: "text", help: "Leer = Questgeber/Abgabe-NPC.", onChange: preview }),
+            field({ label: "ReputationLossNpcId", key: "ReputationLossNpcId", obj: d, type: "text", datalist: () => EQE.Project.options("npc"), help: "Leer = Questgeber/Abgabe-NPC.", onChange: preview }),
           ]),
         ],
         { collapsed: !d.ReputationLossOnAbandon && !d.ReputationLossOnFail }
       )
     );
 
-    preview();
   }
 
   // ---------------------------------------------------------------- Objectives
@@ -263,6 +237,36 @@ window.EQE = window.EQE || {};
 
   function renderObjectiveCard(o, index, api) {
     const nodes = [];
+    const tvWrap = h("div", { class: "tv-wrap" });
+    const tvHint = h("div", { class: "help" });
+    function updateTVHint() {
+      if (o.Type === "Survive" && o.TargetValue) {
+        const m = Math.floor(o.TargetValue / 60);
+        const sec = o.TargetValue % 60;
+        tvHint.textContent = "= " + m + " min" + (sec ? " " + sec + " s" : "");
+      } else tvHint.textContent = "";
+    }
+    function drawTV() {
+      clear(tvWrap);
+      const info = EQE.TARGET_VALUE_HELP[o.Type] || { unit: "", tip: "" };
+      tvWrap.appendChild(
+        field({
+          label: "TargetValue" + (info.unit ? " – " + info.unit : ""),
+          key: "TargetValue",
+          obj: o,
+          type: "number",
+          required: true,
+          tip: info.tip,
+          onChange: () => {
+            updateTVHint();
+            preview();
+          },
+        })
+      );
+      tvWrap.appendChild(tvHint);
+      updateTVHint();
+    }
+    drawTV();
     nodes.push(
       h("div", { class: "grid3" }, [
         field({
@@ -285,11 +289,12 @@ window.EQE = window.EQE || {};
           options: EQE.OBJECTIVE_TYPES,
           onChange: () => {
             api.refreshTitle();
+            drawTV();
             redrawParams();
             preview();
           },
         }),
-        field({ label: "TargetValue", key: "TargetValue", obj: o, type: "number", required: true, onChange: preview }),
+        tvWrap,
       ])
     );
     nodes.push(field({ label: "Description", key: "Description", obj: o, type: "text", onChange: preview }));
@@ -371,9 +376,16 @@ window.EQE = window.EQE || {};
         spec.options.map((v) => h("option", { value: v, selected: (params[spec.key] || "") === v, text: v || "(leer)" }))
       );
     } else {
+      let refId = null;
+      if (spec.ref) {
+        refId = EQE.uid();
+        const refList = spec.ref === "stash" ? EQE.Project.options("stash") : (st.data.Spawns || []).map((x) => x.SpawnId).filter((x) => x);
+        wrap.appendChild(h("datalist", { id: refId }, refList.map((d2) => h("option", typeof d2 === "string" ? { value: d2 } : { value: d2.value, label: d2.label }))));
+      }
       input = h("input", {
         type: spec.type === "number" ? "number" : "text",
         step: spec.type === "number" ? "any" : undefined,
+        list: refId || undefined,
         oninput: (e) => {
           const v = e.target.value;
           if (v === "") delete params[spec.key];
@@ -552,7 +564,7 @@ window.EQE = window.EQE || {};
         rows.push(
           h("div", { class: "grid2" }, [
             field({ label: "Amount (Ruf-Betrag, negativ = Verlust)", key: "Amount", obj: r, type: "number", onChange: () => { api.refreshTitle(); preview(); } }),
-            field({ label: "NpcId", key: "NpcId", obj: r, type: "text", help: "Leer = Abgabe-NPC/Questgeber.", onChange: preview }),
+            field({ label: "NpcId", key: "NpcId", obj: r, type: "text", datalist: () => EQE.Project.options("npc"), help: "Leer = Abgabe-NPC/Questgeber.", onChange: preview }),
           ])
         );
       } else if (r.Type === "LonerReputation") {
@@ -683,13 +695,6 @@ window.EQE = window.EQE || {};
     if (d.StartItemsOnFail) out.StartItemsOnFail = d.StartItemsOnFail;
     if (d.ReputationGainOnTurnBack) out.ReputationGainOnTurnBack = d.ReputationGainOnTurnBack;
     return out;
-  }
-
-  function preview() {
-    const out = buildOutput(st.data);
-    renderJson(st.els.preview, out);
-    saveDraft("quest", st.data);
-    st.els.status.textContent = (st.data.QuestId || "(ohne Id)") + " · " + st.data.Objectives.length + " Objective(s) · " + st.data.Rewards.length + " Reward(s)";
   }
 
   // ---------------------------------------------------------------- Validierung

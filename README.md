@@ -7,17 +7,28 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
 
 ## Benutzung
 
-1. Tab wählen (Quest / NPC / Dialog / Stash) und das Formular ausfüllen. Rechts erscheint live die fertige JSON-Datei.
-2. **Prüfen** klickt gegen die wichtigsten Regeln des Mod-Validators (fehlende Pflichtfelder, doppelte IDs,
-   unbekannte Rangnamen, leere Ruf-Bereiche, kaputte Dialog-Verweise, …). Ersetzt nicht den echten Validator im
-   Server-Log, findet aber die häufigsten Fehler vorher.
-3. **JSON kopieren** oder **Herunterladen**, Datei in den passenden Ordner im Server-Profil legen
-   (`Quest/`, `NPC/`, `Dialog/`, `Stash/` – beliebig tief verschachtelt, wird rekursiv geladen).
-4. Bestehende Datei ändern: **JSON laden…** (Datei wählen) oder **JSON einfügen…** (Text einfügen) – das Formular
-   füllt sich automatisch.
+1. **Projekt laden** (Tab *Projekt*): den ganzen `ExodusQuests`-Profilordner auswählen oder Ordner/Dateien per Drag&Drop
+   hineinziehen. Das Tool erkennt selbst, was Quest, NPC, Dialog und Stash ist (Config.json, Spielerdaten u. Ä. werden übersprungen).
+2. **Bearbeiten** in den Editor-Tabs: oben die Datei auswählen (oder *Neu* / *Duplizieren*). Alle IDs – NPCs, Quests, Stashes,
+   Dialoge, Spawn-IDs, Dialogsprünge – kommen als Vorschlagsliste aus dem Projekt. Änderungen werden sofort gespeichert.
+3. **Zuweisen:** Quests und Dialoge weist du im Abschnitt „Zuweisung an NPCs“ direkt dem NPC zu. Im **Dialog-Tab** erst den NPC
+   wählen – „Neu“ legt den Dialog dann für genau diesen NPC an, die Liste zeigt nur dessen Dialoge.
+4. **Ingame-Vorschau** (Dialog-Tab, rechts): das Gesprächsfenster wie im Spiel, durchklickbar. Rang beim NPC (und bei anderen NPCs),
+   offene Rückgaben (`TurnBack`) und Spielername sind einstellbar; Ruf-Bedingungen, `Requires`, `@quests`, `@trade` und die
+   Themenliste verhalten sich wie auf dem Server.
+5. **NPC-Übersicht:** alle NPCs auf einen Blick – Quests, Daily-Pool, Dialoge, Verbündete/Rivalen, Gegenseiten (wer einen NPC als
+   Rivalen eingetragen hat) plus Beziehungsgraph. Fehlende Verweise sind rot markiert.
+6. **Prüfen:** pro Datei der Button *Prüfen*; im Projekt-Tab *Alles prüfen* testet jede Datei **und alle Verweise untereinander**
+   (unbekannte NPCs/Stashes/Dialoge/Spawn-IDs, nicht angebotene Quests, nicht zugewiesene Dialoge, kaputte Dialogsprünge …).
+7. **Exportieren:** *ZIP: nur Geändertes* liefert genau die neu angelegten/geänderten Dateien in der Struktur
+   `Quest/ NPC/ Dialog/ Stash/` (Unterordner bleiben erhalten), *ZIP: alles* das ganze Projekt. Unveränderte Dateien werden
+   byte-genau wie geladen exportiert.
 
-Entwürfe werden fortlaufend im Browser zwischengespeichert (`localStorage`, pro Tab getrennt) und bleiben beim
-nächsten Besuch erhalten. Es wird nichts hochgeladen oder an einen Server gesendet.
+**Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
+Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).
+
+Das Projekt wird fortlaufend im Browser zwischengespeichert (`localStorage`) und bleibt beim nächsten Besuch erhalten – das ist aber
+nur ein Zwischenspeicher: bitte regelmäßig per ZIP sichern. Es wird nichts hochgeladen oder an einen Server gesendet.
 
 ## Lokal starten
 
@@ -38,15 +49,18 @@ Einmalig einrichten: **Settings → Pages → Source: „GitHub Actions“** wä
 ## Aufbau
 
 ```
-index.html          Shell, Tabs, Formular-/Vorschau-Layout
+index.html          Tabs und Panels
 css/style.css        Dark-Theme (an die DayZ/STALKER-Optik des Mods angelehnt)
-js/common.js          Gemeinsame UI-Bausteine (Felder, Listen-Editor, Ruf-Bereich-Editor, JSON-Vorschau, Toasts)
-js/data.js            Datentabellen: Objective-Parameter je Typ, Belohnungstypen, Ruf-Ränge
+js/common.js          Gemeinsame UI-Bausteine (Felder, Listen-Editor, Ruf-Bereich-Editor, JSON-Vorschau, Toasts, Tooltips)
+js/data.js            Datentabellen: Objective-Parameter je Typ, TargetValue-Hilfen, Ruf-Ränge
+js/project.js         Projekt: Dateityp-Erkennung, Verweise/Umbenennen, Gesamtprüfung, ZIP-Export, Autosave
+js/shell.js           Editor-Gerüst (Dateiauswahl, Neu/Duplizieren/Löschen, Vorschau) und Zuweisungs-Abschnitt
 js/quest.js           Quest-Editor
 js/npc.js             NPC-Editor
-js/dialog.js          Dialog-Editor
+js/dialog.js          Dialog-Editor inkl. NPC-Auswahl und Ingame-Vorschau
 js/stash.js           Stash-Editor
-js/main.js            Tab-Umschaltung, Start
+js/overview.js        Projekt-Tab (Laden, Liste, Prüfung, Export) und NPC-Übersicht
+js/main.js            Tab-Umschaltung, Drag&Drop, Start
 ```
 
 Kein Framework, kein Build – reines HTML/CSS/JS, damit es ohne Weiteres auf GitHub Pages läuft und leicht

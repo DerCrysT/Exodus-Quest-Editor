@@ -1,33 +1,83 @@
 /**
- * Exodus Quest Editor – Tab-Umschaltung und Start.
+ * Exodus Quest Editor – Tab-Umschaltung, globales Drag&Drop und Start.
  */
 (function () {
   "use strict";
+  const EQE = window.EQE;
+  const TAB_KEY = "eqe:tab";
+  const refreshers = {};
 
   function switchTab(name) {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
+    if (EQE.editors[name]) EQE.editors[name].reload();
+    if (refreshers[name]) refreshers[name]();
     try {
-      localStorage.setItem("eqe:tab", name);
+      localStorage.setItem(TAB_KEY, name);
     } catch (e) {
       /* egal */
     }
   }
+  EQE.switchTab = switchTab;
+
+  /** Datei in ihrem Editor öffnen (springt auf den passenden Tab). */
+  EQE.openItem = function (uid) {
+    const item = EQE.Project.get(uid);
+    if (!item) return;
+    switchTab(item.kind);
+    EQE.editors[item.kind].open(uid);
+  };
 
   document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".tab").forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
 
-    window.EQE.Quest.init(document.getElementById("panel-quest"));
-    window.EQE.Npc.init(document.getElementById("panel-npc"));
-    window.EQE.Dialog.init(document.getElementById("panel-dialog"));
-    window.EQE.Stash.init(document.getElementById("panel-stash"));
+    const project = EQE.Overview.initProject(document.getElementById("panel-project"));
+    const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
+    refreshers.project = project.refresh;
+    refreshers.overview = overview.refresh;
+    EQE.Quest.init(document.getElementById("panel-quest"));
+    EQE.Npc.init(document.getElementById("panel-npc"));
+    EQE.Dialog.init(document.getElementById("panel-dialog"));
+    EQE.Stash.init(document.getElementById("panel-stash"));
 
-    let startTab = "quest";
+    // Drag&Drop über das ganze Fenster
+    const overlay = document.querySelector('[data-el="drop-overlay"]');
+    let depth = 0;
+    const hasFiles = (e) => e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") > -1;
+    window.addEventListener("dragenter", (e) => {
+      if (!hasFiles(e)) return;
+      depth++;
+      overlay.hidden = false;
+    });
+    window.addEventListener("dragleave", (e) => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (!depth) overlay.hidden = true;
+    });
+    window.addEventListener("dragover", (e) => {
+      if (hasFiles(e)) e.preventDefault();
+    });
+    window.addEventListener("drop", async (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth = 0;
+      overlay.hidden = true;
+      await EQE.Project.ingestDrop(e.dataTransfer);
+      switchTab("project");
+    });
+
+    // Nach dem Laden von Dateien zur Projekt-Übersicht springen
+    EQE.Project.on((ev) => {
+      if (ev.type === "ingest") switchTab("project");
+    });
+
+    let startTab = "project";
     try {
-      startTab = localStorage.getItem("eqe:tab") || "quest";
+      startTab = localStorage.getItem(TAB_KEY) || "project";
     } catch (e) {
       /* egal */
     }
-    if (document.getElementById("panel-" + startTab)) switchTab(startTab);
+    if (!document.getElementById("panel-" + startTab)) startTab = "project";
+    switchTab(startTab);
   });
 })();

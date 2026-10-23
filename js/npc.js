@@ -37,68 +37,45 @@ window.EQE = window.EQE || {};
     return { NpcId: "", Factor: 1.0 };
   }
 
-  let st = null;
+  const st = { data: null };
+  let preview = () => {};
 
   function init(root) {
-    st = { data: loadDraft("npc") || defaultNpc(), root, els: {} };
-    st.els.form = root.querySelector('[data-el="form"]');
-    st.els.preview = root.querySelector('[data-el="preview"]');
-    st.els.issues = root.querySelector('[data-el="issues"]');
-    st.els.status = root.querySelector('[data-el="status"]');
-    wireToolbar(root);
-    buildForm();
+    return EQE.createEditor({
+      kind: "npc",
+      root,
+      title: "NPC",
+      defaultJson: () => {
+        const j = buildOutput(defaultNpc());
+        j.NpcId = EQE.Project.uniqueId("npc", "npc_new");
+        j.Name = "Neuer NPC";
+        return j;
+      },
+      fromJson: fromJson,
+      toJson: buildOutput,
+      buildForm,
+      validate: validateNpc,
+      status: (d) => (d.NpcId || "(ohne Id)") + " · " + d.Quests.length + " Quest(s) · " + d.Dialogs.length + " Dialog(e)",
+    });
   }
 
-  function wireToolbar(root) {
-    root.querySelector('[data-act="new"]').addEventListener("click", () => {
-      if (!confirm("Neues, leeres NPC-Formular? Nicht exportierte Eingaben gehen verloren.")) return;
-      st.data = defaultNpc();
-      buildForm();
-    });
-    const fileInput = root.querySelector('[data-act="import-file"]');
-    root.querySelector('[data-act="import"]').addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => tryImport(reader.result);
-      reader.readAsText(file);
-      e.target.value = "";
-    });
-    root.querySelector('[data-act="paste"]').addEventListener("click", () => {
-      const ta = h("textarea", { placeholder: "NPC-JSON hier einfügen…" });
-      const btn = h("button", { class: "btn primary", type: "button", text: "Übernehmen", onclick: () => { tryImport(ta.value); closeModal(); } });
-      openModal("NPC-JSON einfügen", h("div", {}, [ta, h("div", { style: "margin-top:10px" }, [btn])]));
-    });
-    root.querySelector('[data-act="validate"]').addEventListener("click", () => renderIssues(st.els.issues, validateNpc(st.data)));
-    root.querySelector('[data-act="copy"]').addEventListener("click", () => copyText(JSON.stringify(buildOutput(st.data), null, 2)));
-    root.querySelector('[data-act="download"]').addEventListener("click", () => download((st.data.NpcId || "npc") + ".json", JSON.stringify(buildOutput(st.data), null, 2)));
+  function fromJson(obj) {
+    const d = Object.assign(defaultNpc(), obj);
+    ["Clothing", "Equipment", "Quests", "Dialogs", "DailyPool"].forEach((k) => (d[k] = (obj[k] || []).slice()));
+    d.ReputationAllies = (obj.ReputationAllies || []).map((l) => Object.assign(defaultLink(), l));
+    d.ReputationEnemies = (obj.ReputationEnemies || []).map((l) => Object.assign(defaultLink(), l));
+    return d;
   }
 
-  function tryImport(text) {
-    try {
-      const obj = JSON.parse(text);
-      const d = Object.assign(defaultNpc(), obj);
-      ["Clothing", "Equipment", "Quests", "Dialogs", "DailyPool"].forEach((k) => (d[k] = (obj[k] || []).slice()));
-      d.ReputationAllies = (obj.ReputationAllies || []).map((l) => Object.assign(defaultLink(), l));
-      d.ReputationEnemies = (obj.ReputationEnemies || []).map((l) => Object.assign(defaultLink(), l));
-      st.data = d;
-      buildForm();
-      toast("NPC geladen.");
-    } catch (e) {
-      toast("Ungültiges JSON: " + e.message, true);
-    }
-  }
-
-  function buildForm() {
-    const d = st.data;
-    const form = st.els.form;
-    clear(form);
+  function buildForm(d, ctx) {
+    st.data = d;
+    preview = ctx.changed;
+    const form = ctx.form;
 
     form.appendChild(
       section("Grunddaten", "", [
         h("div", { class: "grid2" }, [
-          field({ label: "NpcId", key: "NpcId", obj: d, type: "text", required: true, onChange: preview }),
+          field({ label: "NpcId", key: "NpcId", obj: d, type: "text", required: true, help: "Beim Umbenennen werden Verweise in Quests, Dialogen und anderen NPCs mitgezogen.", onChange: preview }),
           field({ label: "Name", key: "Name", obj: d, type: "text", required: true, onChange: preview }),
         ]),
         h("div", { class: "grid3" }, [
@@ -139,13 +116,13 @@ window.EQE = window.EQE || {};
 
     form.appendChild(
       section("Quests & Dialoge", "Feste Questliste, Dialog-IDs, Daily-Pool", [
-        h("div", { class: "field" }, [h("label", {}, "Quests (feste QuestIds)"), strList({ items: d.Quests, placeholder: "QuestId + Enter", onChange: preview })]),
+        h("div", { class: "field" }, [h("label", {}, "Quests (feste QuestIds)"), strList({ items: d.Quests, placeholder: "QuestId + Enter", datalist: () => EQE.Project.options("quest"), onChange: preview })]),
         h("div", { class: "field" }, [
           h("label", {}, "Dialogs (DialogIds)"),
-          strList({ items: d.Dialogs, placeholder: "DialogId + Enter", onChange: preview }),
+          strList({ items: d.Dialogs, placeholder: "DialogId + Enter", datalist: () => EQE.Project.options("dialog"), onChange: preview }),
           h("div", { class: "help", text: "Zweite F-Aktion „Sprechen“. Mehrere Dialoge ergeben eine Themenliste; keine Quests/DailyPool + Dialoge = nur „Sprechen“." }),
         ]),
-        h("div", { class: "field" }, [h("label", {}, "DailyPool"), strList({ items: d.DailyPool, placeholder: "QuestId + Enter", onChange: preview })]),
+        h("div", { class: "field" }, [h("label", {}, "DailyPool"), strList({ items: d.DailyPool, placeholder: "QuestId + Enter", datalist: () => EQE.Project.options("quest"), onChange: preview })]),
         h("div", { class: "grid3" }, [
           field({ label: "DailyCount", key: "DailyCount", obj: d, type: "number", onChange: preview }),
           field({ label: "DailyLifetimeSeconds", key: "DailyLifetimeSeconds", obj: d, type: "number", help: "Default 259200 (3 Tage).", onChange: preview }),
@@ -163,7 +140,6 @@ window.EQE = window.EQE || {};
       )
     );
 
-    preview();
   }
 
   function buildLinkList(d, key, label) {
@@ -178,7 +154,7 @@ window.EQE = window.EQE || {};
         emptyLabel: "Keine Einträge.",
         renderCard: (l, i, api) => [
           h("div", { class: "grid2" }, [
-            field({ label: "NpcId", key: "NpcId", obj: l, type: "text", required: true, onChange: () => { api.refreshTitle(); preview(); } }),
+            field({ label: "NpcId", key: "NpcId", obj: l, type: "text", required: true, datalist: () => EQE.Project.options("npc").filter((o) => o.value !== st.data.NpcId), onChange: () => { api.refreshTitle(); preview(); } }),
             field({ label: "Factor (0.0–1.0)", key: "Factor", obj: l, type: "number", step: "0.1", onChange: () => { api.refreshTitle(); preview(); } }),
           ]),
         ],
@@ -217,12 +193,6 @@ window.EQE = window.EQE || {};
     if (d.ReputationAllies.length) out.ReputationAllies = d.ReputationAllies.map(cleanLink);
     if (d.ReputationEnemies.length) out.ReputationEnemies = d.ReputationEnemies.map(cleanLink);
     return out;
-  }
-
-  function preview() {
-    renderJson(st.els.preview, buildOutput(st.data));
-    saveDraft("npc", st.data);
-    st.els.status.textContent = (st.data.NpcId || "(ohne Id)") + " · " + st.data.Quests.length + " Quest(s) · " + st.data.Dialogs.length + " Dialog(e)";
   }
 
   function validateNpc(d) {

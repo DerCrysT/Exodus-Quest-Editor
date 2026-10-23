@@ -13,61 +13,35 @@ window.EQE = window.EQE || {};
     return { StashId: "", Mode: "Container", ClassName: "SeaChest", Spread: 1.5, Position: "", Rotation: 0, ActivationRadius: 200, DespawnRadius: 400, Inventory: [] };
   }
 
-  let st = null;
+  const st = { data: null };
+  let preview = () => {};
 
   function init(root) {
-    st = { data: loadDraft("stash") || defaultStash(), root, els: {} };
-    st.els.form = root.querySelector('[data-el="form"]');
-    st.els.preview = root.querySelector('[data-el="preview"]');
-    st.els.issues = root.querySelector('[data-el="issues"]');
-    st.els.status = root.querySelector('[data-el="status"]');
-    wireToolbar(root);
-    buildForm();
+    return EQE.createEditor({
+      kind: "stash",
+      root,
+      title: "Stash",
+      defaultJson: () => {
+        const j = buildOutput(defaultStash());
+        j.StashId = EQE.Project.uniqueId("stash", "stash_new");
+        return j;
+      },
+      fromJson: (obj) => {
+        const d = Object.assign(defaultStash(), obj);
+        d.Inventory = (obj.Inventory || []).slice();
+        return d;
+      },
+      toJson: buildOutput,
+      buildForm,
+      validate: validateStash,
+      status: (d) => (d.StashId || "(ohne Id)") + " · " + d.Mode + " · " + d.Inventory.length + " Item(s)",
+    });
   }
 
-  function wireToolbar(root) {
-    root.querySelector('[data-act="new"]').addEventListener("click", () => {
-      if (!confirm("Neues, leeres Stash-Formular? Nicht exportierte Eingaben gehen verloren.")) return;
-      st.data = defaultStash();
-      buildForm();
-    });
-    const fileInput = root.querySelector('[data-act="import-file"]');
-    root.querySelector('[data-act="import"]').addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => tryImport(reader.result);
-      reader.readAsText(file);
-      e.target.value = "";
-    });
-    root.querySelector('[data-act="paste"]').addEventListener("click", () => {
-      const ta = h("textarea", { placeholder: "Stash-JSON hier einfügen…" });
-      const btn = h("button", { class: "btn primary", type: "button", text: "Übernehmen", onclick: () => { tryImport(ta.value); closeModal(); } });
-      openModal("Stash-JSON einfügen", h("div", {}, [ta, h("div", { style: "margin-top:10px" }, [btn])]));
-    });
-    root.querySelector('[data-act="validate"]').addEventListener("click", () => renderIssues(st.els.issues, validateStash(st.data)));
-    root.querySelector('[data-act="copy"]').addEventListener("click", () => copyText(JSON.stringify(buildOutput(st.data), null, 2)));
-    root.querySelector('[data-act="download"]').addEventListener("click", () => download("stash_" + (st.data.StashId || "stash").replace(/^stash_/, "") + ".json", JSON.stringify(buildOutput(st.data), null, 2)));
-  }
-
-  function tryImport(text) {
-    try {
-      const obj = JSON.parse(text);
-      const d = Object.assign(defaultStash(), obj);
-      d.Inventory = (obj.Inventory || []).slice();
-      st.data = d;
-      buildForm();
-      toast("Stash geladen.");
-    } catch (e) {
-      toast("Ungültiges JSON: " + e.message, true);
-    }
-  }
-
-  function buildForm() {
-    const d = st.data;
-    const form = st.els.form;
-    clear(form);
+  function buildForm(d, ctx) {
+    st.data = d;
+    preview = ctx.changed;
+    const form = ctx.form;
 
     const modeHint = h("div", { class: "help" });
     function updateModeHint() {
@@ -91,7 +65,7 @@ window.EQE = window.EQE || {};
     form.appendChild(
       section("Grunddaten", "", [
         h("div", { class: "grid2" }, [
-          field({ label: "StashId", key: "StashId", obj: d, type: "text", required: true, onChange: preview }),
+          field({ label: "StashId", key: "StashId", obj: d, type: "text", required: true, help: "Beim Umbenennen werden Verweise in Quests mitgezogen.", onChange: preview }),
           field({
             label: "Mode",
             key: "Mode",
@@ -124,7 +98,6 @@ window.EQE = window.EQE || {};
       ])
     );
 
-    preview();
   }
 
   function buildOutput(d) {
@@ -139,12 +112,6 @@ window.EQE = window.EQE || {};
     if (d.DespawnRadius !== undefined && d.DespawnRadius !== DEFAULTS.DespawnRadius) out.DespawnRadius = d.DespawnRadius;
     if (d.Inventory && d.Inventory.length) out.Inventory = d.Inventory.slice();
     return out;
-  }
-
-  function preview() {
-    renderJson(st.els.preview, buildOutput(st.data));
-    saveDraft("stash", st.data);
-    st.els.status.textContent = (st.data.StashId || "(ohne Id)") + " · " + st.data.Mode + " · " + st.data.Inventory.length + " Item(s)";
   }
 
   function validateStash(d) {

@@ -18,147 +18,61 @@
     </div>
   </div>
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="quest">Quest</button>
+    <button class="tab active" data-tab="project">Projekt</button>
+    <button class="tab" data-tab="quest">Quest</button>
     <button class="tab" data-tab="npc">NPC</button>
     <button class="tab" data-tab="dialog">Dialog</button>
     <button class="tab" data-tab="stash">Stash</button>
+    <button class="tab" data-tab="overview">NPC-Übersicht</button>
     <button class="tab" data-tab="help">Hilfe</button>
   </nav>
 </header>
 
 <main id="panels">
+  <section class="panel active" id="panel-project"></section>
+  <section class="panel" id="panel-quest"></section>
+  <section class="panel" id="panel-npc"></section>
+  <section class="panel" id="panel-dialog"></section>
+  <section class="panel" id="panel-stash"></section>
+  <section class="panel" id="panel-overview"></section>
 
-  <!-- ============================================================ QUEST ============================================================ -->
-  <section class="panel active" id="panel-quest" data-editor="quest">
-    <div class="toolbar">
-      <button class="btn" data-act="new">Neu</button>
-      <button class="btn" data-act="import">JSON laden…</button>
-      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
-      <button class="btn" data-act="paste">JSON einfügen…</button>
-      <span class="spacer"></span>
-      <span class="status" data-el="status"></span>
-      <button class="btn" data-act="validate">Prüfen</button>
-      <button class="btn primary" data-act="copy">JSON kopieren</button>
-      <button class="btn primary" data-act="download">Herunterladen</button>
-    </div>
-    <div class="layout">
-      <div class="col col-form" data-el="form"></div>
-      <div class="col col-preview">
-        <div class="preview-head">
-          <span>Vorschau</span>
-        </div>
-        <pre class="preview" data-el="preview"></pre>
-        <div class="issues" data-el="issues"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ NPC ============================================================ -->
-  <section class="panel" id="panel-npc" data-editor="npc">
-    <div class="toolbar">
-      <button class="btn" data-act="new">Neu</button>
-      <button class="btn" data-act="import">JSON laden…</button>
-      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
-      <button class="btn" data-act="paste">JSON einfügen…</button>
-      <span class="spacer"></span>
-      <span class="status" data-el="status"></span>
-      <button class="btn" data-act="validate">Prüfen</button>
-      <button class="btn primary" data-act="copy">JSON kopieren</button>
-      <button class="btn primary" data-act="download">Herunterladen</button>
-    </div>
-    <div class="layout">
-      <div class="col col-form" data-el="form"></div>
-      <div class="col col-preview">
-        <div class="preview-head"><span>Vorschau</span></div>
-        <pre class="preview" data-el="preview"></pre>
-        <div class="issues" data-el="issues"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ DIALOG ============================================================ -->
-  <section class="panel" id="panel-dialog" data-editor="dialog">
-    <div class="toolbar">
-      <button class="btn" data-act="new">Neu</button>
-      <button class="btn" data-act="import">JSON laden…</button>
-      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
-      <button class="btn" data-act="paste">JSON einfügen…</button>
-      <span class="spacer"></span>
-      <span class="status" data-el="status"></span>
-      <button class="btn" data-act="validate">Prüfen</button>
-      <button class="btn primary" data-act="copy">JSON kopieren</button>
-      <button class="btn primary" data-act="download">Herunterladen</button>
-    </div>
-    <div class="layout">
-      <div class="col col-form" data-el="form"></div>
-      <div class="col col-preview">
-        <div class="preview-head"><span>Vorschau</span></div>
-        <pre class="preview" data-el="preview"></pre>
-        <div class="issues" data-el="issues"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ STASH ============================================================ -->
-  <section class="panel" id="panel-stash" data-editor="stash">
-    <div class="toolbar">
-      <button class="btn" data-act="new">Neu</button>
-      <button class="btn" data-act="import">JSON laden…</button>
-      <input type="file" accept="application/json" class="file-input" data-act="import-file" hidden>
-      <button class="btn" data-act="paste">JSON einfügen…</button>
-      <span class="spacer"></span>
-      <span class="status" data-el="status"></span>
-      <button class="btn" data-act="validate">Prüfen</button>
-      <button class="btn primary" data-act="copy">JSON kopieren</button>
-      <button class="btn primary" data-act="download">Herunterladen</button>
-    </div>
-    <div class="layout">
-      <div class="col col-form" data-el="form"></div>
-      <div class="col col-preview">
-        <div class="preview-head"><span>Vorschau</span></div>
-        <pre class="preview" data-el="preview"></pre>
-        <div class="issues" data-el="issues"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================ HELP ============================================================ -->
-  <section class="panel" id="panel-help" data-editor="help">
-    <div class="help">
-      <h2>Was ist das hier?</h2>
-      <p>Dieses Tool baut die vier JSON-Dateitypen von <strong>ExodusQuests</strong> per Formular zusammen: Quests, NPCs,
-         Dialoge und Stashes. Es läuft komplett im Browser &mdash; nichts wird hochgeladen, alles bleibt lokal. Entwürfe
-         werden automatisch im Browser zwischengespeichert (<code>localStorage</code>) und bleiben beim nächsten Besuch erhalten.</p>
-      <h2>Arbeitsablauf</h2>
+  <section class="panel" id="panel-help">
+    <div class="help-page">
+      <h2>So arbeitest du am besten</h2>
       <ol>
-        <li>Tab wählen (Quest/NPC/Dialog/Stash) und das Formular ausfüllen. Die Vorschau rechts zeigt live das fertige JSON.</li>
-        <li>Mit <strong>Prüfen</strong> gegen die wichtigsten Regeln des Mod-Validators checken (fehlende Pflichtfelder,
-            doppelte IDs, unbekannte Rangnamen, Komma-Listen, Ruf-Bereiche &hellip;). Das ersetzt nicht den echten
-            Validator im Server-Log, hilft aber, die häufigsten Fehler vorher zu finden.</li>
-        <li>Mit <strong>JSON kopieren</strong> oder <strong>Herunterladen</strong> die Datei übernehmen und in den passenden
-            Ordner im Server-Profil legen (<code>Quest/</code>, <code>NPC/</code>, <code>Dialog/</code>, <code>Stash/</code>,
-            beliebig tief verschachtelt).</li>
-        <li>Bestehende Datei ändern? <strong>JSON laden…</strong> oder <strong>JSON einfügen…</strong> benutzen &mdash;
-            das Formular füllt sich automatisch.</li>
+        <li><strong>Projekt laden:</strong> Im Tab <em>Projekt</em> den Ordner deines <code>ExodusQuests</code>-Profils auswählen (oder per Drag&amp;Drop
+            Ordner/Dateien hineinziehen). Das Tool erkennt selbst, was Quest, NPC, Dialog und Stash ist.</li>
+        <li><strong>Bearbeiten:</strong> In den Editor-Tabs wählst du oben die Datei aus. Alle IDs (NPCs, Quests, Stashes, Dialoge &hellip;) bekommst
+            du als Vorschlagsliste &mdash; nichts muss mehr abgetippt werden. Änderungen werden sofort gespeichert (im Browser).</li>
+        <li><strong>Zuweisen:</strong> Quests und Dialoge weist du direkt in ihrem Formular dem NPC zu (Abschnitt „Zuweisung an NPCs“). Im Dialog-Tab
+            wählst du zuerst den NPC &mdash; „Neu“ legt dann einen Dialog für genau diesen NPC an.</li>
+        <li><strong>Prüfen:</strong> „Alles prüfen“ im Projekt-Tab testet jede Datei und alle Verweise untereinander (unbekannte NPCs, Stashes, Dialoge &hellip;).</li>
+        <li><strong>Exportieren:</strong> „ZIP: nur Geändertes“ liefert genau die Dateien, die du verändert oder neu angelegt hast, in der
+            Ordnerstruktur <code>Quest/ NPC/ Dialog/ Stash/</code> &mdash; einfach ins Server-Profil kopieren.</li>
       </ol>
+      <h2>Ingame-Vorschau (Dialog)</h2>
+      <p>Im Dialog-Tab zeigt „Ingame-Vorschau“ das Gesprächsfenster wie im Spiel. Du kannst den Spieler-Rang bei dem NPC (und bei anderen NPCs), offene
+         Rückgaben und den Spielernamen einstellen und das Gespräch durchklicken &mdash; Ruf-Bedingungen, <code>Requires</code>, <code>@quests</code>,
+         <code>@trade</code> und die Themenliste verhalten sich wie auf dem Server.</p>
       <h2>Hinweise</h2>
       <ul>
-        <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod
-            gemeinsam zur selben Anzahl &mdash; das ist <em>keine</em> ODER-Quest, sondern eine Sammelmenge.</li>
-        <li>Rangnamen bei Ruf-Bereichen: Brother in Arms, Ally, Friend, Associate, Acquaintance, Neutral, Suspicious,
-            Disliked, Enemy, Wanted, Execution Target. Groß-/Kleinschreibung und Leerzeichen sind egal.</li>
-        <li><code>Min</code>/<code>Max</code> eines Ruf-Bereichs mit dem Wert 0 gelten dem Spiel als „nicht gesetzt“ (voller
-            Bereich) &mdash; für „bis 0“ bitte <code>MaxRank</code> „Neutral“ verwenden. Das Tool warnt, falls das passiert.</li>
-        <li>Dieses Tool kennt die aktuellen Felder von ExodusQuests (Stand: Reputation-System, Zeitlimit, Start-Item-Rückgabe).
-            Bei neuen Mod-Versionen kann es hinter den echten Schemas zurückbleiben &mdash; im Zweifel zählt
-            <code>docs/schemas/*.json</code> im Mod-Repo.</li>
+        <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
+            das ist <em>keine</em> ODER-Quest, sondern eine Sammelmenge.</li>
+        <li><code>TargetValue</code> bedeutet je Objective etwas anderes (Survive = Sekunden, Explore = automatisch). Fahr mit der Maus über das
+            <span class="tip">?</span> am Feld.</li>
+        <li>Rangnamen: Brother in Arms, Ally, Friend, Associate, Acquaintance, Neutral, Suspicious, Disliked, Enemy, Wanted, Execution Target.
+            <code>Min</code>/<code>Max</code> = 0 gelten dem Spiel als „nicht gesetzt“ &mdash; für „bis 0“ bitte <code>MaxRank</code> „Neutral“ nutzen.</li>
+        <li>Wird eine ID umbenannt, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests, Dialog-Sprünge, Ruf-Bereiche &hellip;).</li>
+        <li>Nichts wird hochgeladen &mdash; alles läuft lokal im Browser. Der Browser-Speicher ist nur ein Zwischenspeicher: sichere regelmäßig per ZIP.</li>
+        <li>Im Zweifel zählen die Schemas <code>docs/schemas/*.json</code> im Mod-Repo.</li>
       </ul>
       <h2>Quelle</h2>
       <p>Repository: <a href="https://github.com/DerCrysT/Exodus-Quest-Editor" target="_blank" rel="noopener">github.com/DerCrysT/Exodus-Quest-Editor</a></p>
     </div>
   </section>
-
 </main>
+
+<div class="drop-overlay" data-el="drop-overlay" hidden><div>Dateien oder Ordner hier loslassen</div></div>
 
 <div class="modal-backdrop" data-el="modal-backdrop" hidden>
   <div class="modal" data-el="modal">
@@ -174,10 +88,13 @@
 
 <script src="js/common.js"></script>
 <script src="js/data.js"></script>
+<script src="js/project.js"></script>
+<script src="js/shell.js"></script>
 <script src="js/quest.js"></script>
 <script src="js/npc.js"></script>
 <script src="js/dialog.js"></script>
 <script src="js/stash.js"></script>
+<script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
