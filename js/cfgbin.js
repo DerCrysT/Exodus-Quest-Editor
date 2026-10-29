@@ -234,6 +234,7 @@ window.EQE = window.EQE || {};
   }
 
   const CONFIG_RE = /(^|[\\/])config\.(bin|cpp)$/i;
+  const EXO_SCRIPT_RE = /XCP_EXO_Override[\\/]scripts[\\/].*\.c$/i;
   /** Alle config.bin/config.cpp eines PBO (nur diese Einträge werden gelesen). */
   async function readPbo(file) {
     return (await readPboFiles(file, (n) => CONFIG_RE.test(n))).files;
@@ -254,12 +255,13 @@ window.EQE = window.EQE || {};
     if (/\.pbo$/i.test(path)) {
       let n = 0;
       // Exodus_GM (Gasmasken-Mod): zusätzlich die Skripte lesen, damit der Gasmasken-Editor sie bearbeiten kann
-      const r = await readPboFiles(file, (name, props) => CONFIG_RE.test(name) || (props && props.prefix === "Exodus_GM" && /\.c$/i.test(name)));
+      const r = await readPboFiles(file, (name, props) => CONFIG_RE.test(name) || (props && props.prefix === "Exodus_GM" && /\.c$/i.test(name)) || EXO_SCRIPT_RE.test(name));
       const text = new TextDecoder("utf-8");
       const gm = { path: path, config: "", scripts: {} };
       for (const e of r.files) {
         if (/\.c$/i.test(e.name)) {
           gm.scripts[e.name] = text.decode(e.buffer);
+          if (EXO_SCRIPT_RE.test(e.name) && EQE.CfgEdit) EQE.CfgEdit.ingestScript(path + "/" + e.name, gm.scripts[e.name]);
           continue;
         }
         ingestBuffer(e.name, e.buffer, path + "/" + e.name);

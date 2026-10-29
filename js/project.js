@@ -547,6 +547,10 @@ window.EQE = window.EQE || {};
     const result = { counts, replaced: 0, unknown: [], errors: [], configs: 0 };
     for (const e of entries) {
       const name = e.path || e.file.name;
+      if (EQE.CfgEdit && /(^|\/)XCP_EXO_Override\/scripts\/.*\.c$/i.test(name)) {
+        EQE.CfgEdit.ingestScript(name, await e.file.text());
+        continue;
+      }
       if (EQE.GasMask && /(^|\/)Exodus_GM\/(.*\/)?Scripts\/.*\.c$/i.test(name)) {
         try {
           EQE.GasMask.ingestLooseScript(name, await e.file.text());

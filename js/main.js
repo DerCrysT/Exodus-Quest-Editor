@@ -62,6 +62,10 @@
     refreshers.radiation = radiation.refresh;
     const anomaly = EQE.Anomaly.init(document.getElementById("panel-anomaly"));
     refreshers.anomaly = anomaly.refresh;
+    const mutants = EQE.Mutants.init(document.getElementById("panel-mutants"));
+    refreshers.mutants = mutants.refresh;
+    const exo = EQE.Exo.init(document.getElementById("panel-exo"));
+    refreshers.exo = exo.refresh;
     const gasmask = EQE.GasMask.init(document.getElementById("panel-gasmask"));
     refreshers.gasmask = gasmask.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
