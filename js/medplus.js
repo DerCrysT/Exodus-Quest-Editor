@@ -146,12 +146,9 @@
   }
   const nTxt = (n) => (n === Infinity ? "nie" : String(n));
 
-  function overdoseRows(c, out, only) {
+  /** Überdosis-Wirkstoff je Dosis aller Medikamente samt Schwellen. */
+  function odData(c, only) {
     const tick = num(c, "OverdoseTickTime");
-    const die = num(c, "OverdoseAgentDieOffSpeed");
-    const T1 = num(c, "OverdoseAgentThresholdMalusActivation");
-    const T2 = num(c, "OverdoseAgentThresholdVomit");
-    const T3 = num(c, "OverdoseAgentMAXCOUNT");
     const meds = OD_MEDS.map(([k, label, lastKey]) => {
       const per = num(c, "Overdose" + k + "PerTick");
       const known = !!lastKey && Number.isFinite(num(c, lastKey));
@@ -159,6 +156,24 @@
       const ticks = Math.max(1, Math.floor(dur / tick));
       return { k: k, label: label, per: per, known: known, dur: dur, ticks: ticks, dose: per * ticks };
     }).filter((m) => Number.isFinite(m.per) && m.per > 0 && (!only || m.k === only));
+    return {
+      tick: tick,
+      die: num(c, "OverdoseAgentDieOffSpeed"),
+      T1: num(c, "OverdoseAgentThresholdMalusActivation"),
+      T2: num(c, "OverdoseAgentThresholdVomit"),
+      T3: num(c, "OverdoseAgentMAXCOUNT"),
+      meds: meds,
+    };
+  }
+
+  function overdoseRows(c, out, only) {
+    const data = odData(c, only);
+    const tick = data.tick;
+    const die = data.die;
+    const T1 = data.T1;
+    const T2 = data.T2;
+    const T3 = data.T3;
+    const meds = data.meds;
     if (!meds.length) return;
     out.push(head("Überdosis durch Medikamente – Annahme: während der Wirkdauer wird bei jedem Überdosis-Takt (" + fmt(tick) + " s) der Wert „Overdose…PerTick“ addiert"));
     out.push(row("Schwellen", "Malus ab " + fmt(T1, 0) + " · Erbrechen ab " + fmt(T2, 0) + " · Maximum " + fmt(T3, 0), "Abbau " + fmt(die * 60, 1) + " pro Minute (" + fmt(die) + " pro Sekunde)"));
@@ -182,9 +197,86 @@
     }
   }
 
+  // ---------------------------------------------------------------- Medikamente: Wirkung je Dosis
+  const MEDS = [
+    { sec: "Ibuprofene", label: "Ibuprofen", tick: "IbuprofeneTickTime", last: "IbuprofeneLastingtime", delay: "IbuprofeneDelayTime", per: [["RegenShockPerTick", "Schock-Regeneration"]], od: "Ibuprofene" },
+    { sec: "Ematogel", label: "Hämatom-Gel", tick: "EmatogelTickTime", last: "EmatogelLastingtime", delay: "EmatogelDelayTime", per: [["RegenStaminaPerTick", "Ausdauer"]], once: [["DecreaseEmatomaPerApply", "Blutergüsse geheilt je Anwendung"], ["EmatogelTimerBeforeCure", "Heilung der Blutergüsse nach (s)"]] },
+    { sec: "Vikasol", label: "Vikasol", tick: "VikasolTickTime", last: "VikasolLastingTime", od: "Vikasol", mods: [["VikasolHealWoundModifier", "Wundheilung (Faktor)"], ["VikasolSlowBloodFlowModifier", "Blutstillung (Faktor)"]] },
+    { sec: "EnergyDrink", label: "Energy-Drink", tick: "EnergyDrinkTickTime", last: "EnergyDrinkLastingTime", per: [["EnergyDrinkWaterLossPerTick", "Wasserverlust"]], mods: [["EnergyDrinkStaminaRecoverMultiplier", "Ausdauer-Regeneration (×)"], ["EnergyDrinkStaminaDepletionMultiplier", "Ausdauer-Verbrauch (×)"]], once: [["EnergyDrinkSleepRecoverValue", "Schlaf-Erholung (einmalig)"], ["EnergyDrinkMinQtyThresholdDrunkToStart", "Mindestmenge getrunken, damit er wirkt"]] },
+    { sec: "Diazepam", label: "Diazepam", tick: "DiazepamTickTime", last: "DiazepamLastingTime", delay: "DiazepamDelayActivation", per: [["DiazepamInsertSleepPerTick", "Schlaf"], ["DiazepamMentalRecoverPerTick", "Mental"]], od: "Diazepam" },
+    { sec: "AntiRad", label: "Anti-Rad", tick: "AntiRadTickTime", last: "AntiRadLastingTime", delay: "AntiRadDelayActivation", od: "AntiRad", once: [["AntiRadQTY", "Anti-Rad-Menge"], ["AntiPOXQTY", "Anti-Pocken-Menge"]] },
+    { sec: "NaxaloneSyringe", label: "Naxalon", tick: "NaxaloneTickTime", last: "NaxaloneLastingTime", per: [["NaxaloneHealOverDosePertick", "Überdosis-Wirkstoff entfernt"]], naloxone: true },
+    { sec: "HPRecover", label: "HP-Injektor", last: "HPRecoverLastingTime", noTick: [["HP_Recover_PerTick", "Leben"]] },
+    { sec: "BPRecover", label: "BP-Injektor", last: "BPRecoverLastingTime", noTick: [["BP_Recover_PerTick", "Blut"]] },
+    { sec: "MHRecover", label: "MH-Injektor", last: "MHRecoverLastingTime", noTick: [["MH_Recover_PerTick", "Mental"]] },
+  ];
+  const SOUPS = ["Herbal", "FishStew", "MeatStew", "Potage", "SeaAndMountainSoup", "Stew", "Chowder", "CompleteSoup", "BurnedSoup"];
+
+  /** Wirkung einer Dosis: Takte, Gesamtwerte je Effekt. */
+  function medDose(c, m) {
+    const hasTick = !!m.tick;
+    const tick = hasTick ? num(c, m.tick) : 1;
+    const last = num(c, m.last);
+    const ticks = Math.max(0, Math.floor(last / tick));
+    const per = (m.per || []).concat(m.noTick || []).map(([k, l]) => ({ k: k, label: l, per: num(c, k), total: num(c, k) * ticks }));
+    return { tick: tick, last: last, ticks: ticks, assumedTick: !hasTick, delay: m.delay ? num(c, m.delay) : 0, per: per };
+  }
+
+  function medRows(c, out, sec) {
+    const m = MEDS.find((x) => x.sec === sec);
+    if (!m) return;
+    const d = medDose(c, m);
+    out.push(head("Eine Dosis (" + m.label + ")"));
+    out.push(row("Wirkdauer", fmtTime(d.last), d.ticks + " Takte à " + fmt(d.tick) + " s" + (d.assumedTick ? " – Takt nicht in der Config, 1 s angenommen" : "") + (d.delay ? " · Wirkung beginnt nach " + fmtTime(d.delay) : "")));
+    d.per.forEach((e) => out.push(row(e.label + " gesamt", fmt(e.total, 2), fmt(e.per) + " × " + d.ticks + " Takte · " + fmt(d.last > 0 ? (e.total / d.last) * 60 : 0, 1) + " pro Minute")));
+    (m.mods || []).forEach(([k, l]) => out.push(row(l, fmt(num(c, k)), "während der Wirkdauer")));
+    (m.once || []).forEach(([k, l]) => out.push(row(l, fmt(num(c, k)), "")));
+    if (m.naloxone) {
+      const od0 = odData(c, "");
+      const per = d.per[0] ? d.per[0].total : 0;
+      out.push(head("Was die Spritze gegen Überdosis bewirkt"));
+      out.push(row("Entfernter Überdosis-Wirkstoff", fmt(per, 1), "pro Spritze (zusätzlich zum natürlichen Abbau)"));
+      od0.meds.forEach((x) => out.push(row("≙ Dosen " + x.label, fmt(per / x.dose, 1), "eine Dosis enthält " + fmt(x.dose, 1) + " Wirkstoff")));
+      out.push(row("Reicht für den Abbau von", fmt(per / od0.T1, 1) + "× Malus-Schwelle", "Malus ab " + fmt(od0.T1, 0)));
+    }
+    if (m.od) overdoseRows(c, out, m.od);
+  }
+
+  const PUFFS = {
+    Joint: { label: "Joint", qty: "JointQtyLostPerCircle", effects: [["JointInsertSleepPerCircle", "Schlaf +"], ["JointCureMentalIllnesPerCircle", "Mentalkrankheit geheilt"], ["JointFoodLostPerCircle", "Energie −"], ["JointRadCurePerCircle", "Strahlung abgebaut"], ["JointTripQtyAddedPerCircle", "Trip-Menge +"]], od: "JointInsertOverdoseAgentPerCircle" },
+    Sigaretta: { label: "Zigarette", qty: "SigarettaQtyLostPerCircle", effects: [["SigarettaCureSleepPerCircle", "Schlaf geheilt"], ["SigarettaCureMentalIllnesPerCircle", "Mentalkrankheit geheilt"], ["SigarettaHealthLostPerCircle", "Leben −"], ["SigarettaWaterLostPerCircle", "Wasser −"], ["SigarettaRadCurePerCircle", "Strahlung abgebaut"]] },
+  };
+
+  function puffRows(c, out, sec) {
+    const p = PUFFS[sec];
+    if (!p) return;
+    const qty = num(c, p.qty);
+    out.push(head("Ein Zug (" + p.label + ") und was er kostet"));
+    out.push(row("Menge pro Zug", fmt(qty), "wird von der Menge des Items abgezogen – ein Item mit Menge M reicht für M ÷ " + fmt(qty) + " Züge"));
+    p.effects.forEach(([k, l]) => {
+      const v = num(c, k);
+      out.push(row(l, fmt(v), "pro Zug · pro 10 Züge: " + fmt(v * 10, 1)));
+    });
+    if (p.od) {
+      const od0 = odData(c, "");
+      const perPuff = num(c, p.od);
+      out.push(head("Überdosis durch Züge"));
+      out.push(row("Wirkstoff pro Zug", fmt(perPuff), "Malus ab " + fmt(od0.T1, 0)));
+      out.push(row("Züge bis Überdosis-Malus", perPuff > 0 ? String(Math.ceil(od0.T1 / perPuff)) : "nie", "ohne Abbau (Abbau " + fmt(od0.die * 60, 1) + " pro Minute) · bis Erbrechen: " + (perPuff > 0 ? Math.ceil(od0.T2 / perPuff) : "nie")));
+    }
+  }
+
+  function soupDose(c, sec) {
+    const tick = num(c, sec + "TickTime");
+    const last = num(c, sec + "LastingTime");
+    const ticks = Math.max(0, Math.floor(last / tick));
+    const get = (k) => num(c, sec + k) * ticks;
+    return { tick: tick, last: last, ticks: ticks, hp: get("AmountHealthPerTick"), bp: get("AmountBloodPerTick"), mental: get("AmountMentalPerTick"), sleep: get("AmountSleepPerTick"), rad: get("IncrementRADPerTick") };
+  }
+
   /** Eingabefelder für die Annahmen der Überdosis-Rechnung (Abschnitte mit Medikamenten). */
   function calcControls(secKey, redraw) {
-    if (["Overdose", "Ibuprofene", "Vikasol", "Diazepam", "AntiRad"].indexOf(secKey) < 0) return null;
+    if (["Overdose", "Ibuprofene", "Vikasol", "Diazepam", "AntiRad", "NaxaloneSyringe", "Joint"].indexOf(secKey) < 0) return null;
     const mk = (label, key, tip) => {
       const inp = h("input", { type: "number", step: "any", min: "0", value: od[key], style: "max-width:100px" });
       inp.addEventListener("input", () => {
@@ -318,6 +410,12 @@
       out.push(row("Von „Ohnmacht“ bis nüchtern", fmtTime((num(c, "DrunkAgentThresholdFaint") - num(c, "DrunkAgentThresholdDeActivation")) / die), ""));
       const g = ["DrunkAgentThresholdDeActivation", "DrunkAgentThresholdActivation", "DrunkAgentThresholdVomit", "DrunkAgentThresholdFaint", "DrunkenessAgentMAXCOUNT"].map((k) => num(c, k));
       if (g.some((v, i) => i && v < g[i - 1])) out.push(warn("Die Schwellen sollten aufsteigen: Nüchtern < Betrunken < Erbrechen < Ohnmacht < Maximum."));
+      const coal = num(c, "DrunkAgentCuredByCharcoalPerTick");
+      if (coal > 0) {
+        out.push(head("Mit Aktivkohle"));
+        out.push(row("Zusätzlicher Abbau", fmt(coal * 60 / tt, 1) + " pro Minute", fmt(coal) + " alle " + fmt(tt) + " s – natürlicher Abbau: " + fmt(die * 60, 1) + " pro Minute"));
+        out.push(row("Vom Maximum bis nüchtern", fmtTime((num(c, "DrunkenessAgentMAXCOUNT") - num(c, "DrunkAgentThresholdDeActivation")) / (die + coal / tt)), "mit Kohle (statt " + fmtTime((num(c, "DrunkenessAgentMAXCOUNT") - num(c, "DrunkAgentThresholdDeActivation")) / die) + ")"));
+      }
     },
     Overdose(c, out) {
       const tt = num(c, "OverdoseTickTime");
@@ -331,16 +429,47 @@
       overdoseRows(c, out, "");
     },
     Ibuprofene(c, out) {
-      overdoseRows(c, out, "Ibuprofene");
+      medRows(c, out, "Ibuprofene");
+    },
+    Ematogel(c, out) {
+      medRows(c, out, "Ematogel");
     },
     Vikasol(c, out) {
-      overdoseRows(c, out, "Vikasol");
+      medRows(c, out, "Vikasol");
+    },
+    EnergyDrink(c, out) {
+      medRows(c, out, "EnergyDrink");
     },
     Diazepam(c, out) {
-      overdoseRows(c, out, "Diazepam");
+      medRows(c, out, "Diazepam");
     },
     AntiRad(c, out) {
-      overdoseRows(c, out, "AntiRad");
+      medRows(c, out, "AntiRad");
+    },
+    NaxaloneSyringe(c, out) {
+      medRows(c, out, "NaxaloneSyringe");
+    },
+    HPRecover(c, out) {
+      medRows(c, out, "HPRecover");
+    },
+    BPRecover(c, out) {
+      medRows(c, out, "BPRecover");
+    },
+    MHRecover(c, out) {
+      medRows(c, out, "MHRecover");
+    },
+    Joint(c, out) {
+      puffRows(c, out, "Joint");
+    },
+    Sigaretta(c, out) {
+      puffRows(c, out, "Sigaretta");
+    },
+    HeadBone(c, out) {
+      out.push(head("Heilung der Kopfverletzung relativ zu Vanilla (Vanilla = ×2)"));
+      [["HeadBoneRegenWithHeadBandMultiplier", "Mit Kopfband"], ["HeadBoneRegenWithIbuprofeneMultiplier", "Mit Ibuprofen"], ["HeadBoneRegenWithBothMultiplier", "Mit Kopfband + Ibuprofen"]].forEach(([k, l]) =>
+        out.push(row(l, "×" + fmt(num(c, k)), fmt(num(c, k) / 2, 2) + "× so schnell wie Vanilla"))
+      );
+      out.push(row("Kopfsymbol sichtbar", "unter " + fmt(num(c, "HeadBoneThresholdToShowIcon"), 0) + " von 33 HP", "wieder weg ab " + fmt(num(c, "HeadBoneThresholdToUnShowIcon"), 0)));
     },
     Overweight(c, out) {
       out.push(head("Traglast"));
@@ -407,6 +536,11 @@
       out.push(row("Drinnen", fmtTime(thr / up * tt + num(c, "CabinFeverMinTimeIndoorsBeforeGrowing")), "Auslöse-Schwelle ÷ Anstieg + Karenzzeit"));
       if (num(c, "CabinFeverWorseInBadWeather") === 1) out.push(row("Bei schlechtem Wetter", fmtTime(thr / (up * num(c, "CabinFeverBadWeatherIncreaseMultiplier")) * tt + num(c, "CabinFeverMinTimeIndoorsBeforeGrowing")), "× " + fmt(num(c, "CabinFeverBadWeatherIncreaseMultiplier"))));
       out.push(row("Abbau draußen (von der Schwelle)", fmtTime(thr / num(c, "CabinFeverRiskDecayPerTick") * tt), ""));
+      const dzUp = num(c, "CabinfeverDiazepamIncreaseDivider");
+      const dzDown = num(c, "CabinFeverDiazepamDecreaseMultiplier");
+      out.push(head("Mit Diazepam"));
+      out.push(row("Zeit bis Lagerkoller drinnen", fmtTime(thr / (up * dzUp) * tt + num(c, "CabinFeverMinTimeIndoorsBeforeGrowing")), "Anstieg × " + fmt(dzUp)));
+      out.push(row("Abbau draußen", fmtTime(thr / (num(c, "CabinFeverRiskDecayPerTick") * dzDown) * tt), "Abbau × " + fmt(dzDown)));
     },
     Insomnia(c, out) {
       out.push(head("Schlaflosigkeit"));
@@ -450,7 +584,6 @@
     try {
       if (CALC[secKey]) CALC[secKey](c, out);
       else if (sec) perTickRows(out, c, sec);
-      if (CALC[secKey] && /Soup|Stew|Herbal|Chowder|Potage|Ibuprofene|Ematogel|Vikasol|Diazepam|AntiRad|Naxalone|EnergyDrink|Recover/.test(secKey)) perTickRows(out, c, sec);
       listWarnings(c, secKey, out);
     } catch (e) {
       out.push(warn("Berechnung nicht möglich: " + e.message));
@@ -1148,6 +1281,51 @@
     draw();
   }
 
+  // ---------------------------------------------------------------- Medikamente: Übersicht
+  function renderMedsOverview(item, box) {
+    const c = item.json;
+    box.appendChild(
+      h("div", { class: "mp-sec-head" }, [
+        h("h2", { text: "Medikamente (Übersicht)" }),
+        h("div", { class: "muted", text: "Alle Medikamente, Injektoren und Suppen mit ihrer Wirkung je Dosis, ihrem Überdosis-Beitrag und den Dosen bis zur Überdosis – an einem Ort. Klick auf den Namen springt in den Abschnitt." }),
+      ])
+    );
+    const odAll = odData(c, "");
+    const odByKey = {};
+    odAll.meds.forEach((x) => (odByKey[x.k] = x));
+    const go = (sec) => h("a", { href: "#", text: T().titleOf(sec), onclick: (e) => (e.preventDefault(), setView({ type: "sec", key: sec })) });
+    const rows = MEDS.map((m) => {
+      const d = medDose(c, m);
+      const eff = d.per.map((e) => e.label + " " + fmt(e.total, 1)).concat((m.mods || []).map(([k, l]) => l + " " + fmt(num(c, k)))).join(" · ");
+      const o = m.od ? odByKey[m.od] : null;
+      const nMalus = o ? dosesTo(odAll.T1, o.dose, odAll.die, 0) : null;
+      return h("tr", {}, [
+        h("td", {}, [go(m.sec)]),
+        h("td", { class: "mono small", text: fmtTime(d.last) + (d.delay ? " (+" + fmtTime(d.delay) + ")" : "") }),
+        h("td", { class: "small", text: eff || "–" }),
+        h("td", { class: "mono small", text: o ? fmt(o.dose, 1) : "–" }),
+        h("td", { class: "mono small", text: nMalus ? nMalus + (nMalus === 1 ? " Dosis" : " Dosen") : "–" }),
+      ]);
+    });
+    SOUPS.forEach((sk) => {
+      if (typeof c[sk + "TickTime"] !== "number") return;
+      const d = soupDose(c, sk);
+      const eff = [["Leben", d.hp], ["Blut", d.bp], ["Mental", d.mental], ["Schlaf", d.sleep], ["Strahlung", d.rad]].filter((x) => x[1]).map((x) => x[0] + " " + fmt(x[1], 1)).join(" · ");
+      rows.push(
+        h("tr", {}, [h("td", {}, [go(sk)]), h("td", { class: "mono small", text: fmtTime(d.last) }), h("td", { class: "small", text: eff || "–" }), h("td", { class: "mono small", text: "–" }), h("td", { class: "mono small", text: "–" })])
+      );
+    });
+    const head = h("tr", {}, ["Medikament / Speise", "Wirkdauer", "Wirkung je Dosis (gesamt)", "Überdosis-Wirkstoff", "Dosen bis Malus"].map((t) => h("th", { text: t })));
+    box.appendChild(
+      h("div", { class: "section" }, [
+        h("div", { class: "section-body" }, [
+          h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [head]), h("tbody", {}, rows)])]),
+          h("div", { class: "help", text: "Malus-Schwelle: " + fmt(odAll.T1, 0) + " · Erbrechen: " + fmt(odAll.T2, 0) + " · Abbau " + fmt(odAll.die * 60, 1) + " pro Minute. Medikamente ohne eigene Wirkdauer in der Config (Schmerzmittel, Tetracyclin, Morphin, Epinephrin, Kohle) rechnen unter „Überdosis“ mit der dort einstellbaren Annahme. HP/BP/MH-Injektoren: Takt nicht in der Config, 1 s angenommen." }),
+        ]),
+      ])
+    );
+  }
+
   function fileList() {
     return [
       ["mp_zombie", "Zombie-Schaden"],
@@ -1227,6 +1405,7 @@
     });
     nav.appendChild(h("div", { class: "nav-title", text: "Werkzeuge" }));
     nav.appendChild(h("button", { class: "mp-navbtn" + (st.view.type === "ticks" ? " active" : ""), type: "button", text: "Tick-Zeiten (alle)", onclick: () => ((st.search = ""), setView({ type: "ticks" })) }));
+    nav.appendChild(h("button", { class: "mp-navbtn" + (st.view.type === "meds" ? " active" : ""), type: "button", text: "Medikamente (Übersicht)", onclick: () => ((st.search = ""), setView({ type: "meds" })) }));
     nav.appendChild(h("div", { class: "nav-title", text: "Tabellen" }));
     fileList().forEach(([k, l]) => {
       nav.appendChild(h("button", { class: "mp-navbtn" + (st.view.type === "file" && st.view.key === k ? " active" : ""), type: "button", text: l + (fileItem(k) ? "" : " (nicht geladen)"), onclick: () => ((st.search = ""), setView({ type: "file", key: k })) }));
@@ -1257,6 +1436,7 @@
     }
     if (st.view.type === "search") return searchView(item, content);
     if (st.view.type === "ticks") return renderTicks(item, content);
+    if (st.view.type === "meds") return renderMedsOverview(item, content);
     renderSection(item, st.view.key, content);
   }
 
