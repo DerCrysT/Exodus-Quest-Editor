@@ -117,6 +117,92 @@
       .forEach((k) => out.push(row(T().info(sec.key, k).label, fmt(c[k] * ticks, 2), fmt(c[k]) + " × " + ticks + " Takte")));
   }
 
+  // ---------------------------------------------------------------- Überdosis durch Medikamente
+  const OD_MEDS = [
+    ["Vikasol", "Vikasol", "VikasolLastingTime"],
+    ["Diazepam", "Diazepam", "DiazepamLastingTime"],
+    ["Painkiller", "Schmerzmittel", null],
+    ["Ibuprofene", "Ibuprofen", "IbuprofeneLastingtime"],
+    ["Tetracycline", "Tetracyclin", null],
+    ["Morphine", "Morphin", null],
+    ["Epinephrine", "Epinephrin", null],
+    ["AntiRad", "Anti-Rad", "AntiRadLastingTime"],
+    ["Charcoal", "Aktivkohle", null],
+  ];
+  /** Einstellbare Annahmen der Überdosis-Rechnung (nur Anzeige, nicht in der JSON). */
+  const od = { interval: 60, unknownDur: 60 };
+
+  /** Dosen bis die Schwelle erreicht ist; interval = 0: alle auf einmal. Infinity = wird nie erreicht. */
+  function dosesTo(threshold, dose, decayPerSec, interval) {
+    if (!(dose > 0)) return Infinity;
+    if (!interval) return Math.ceil(threshold / dose);
+    let a = 0;
+    for (let n = 1; n <= 500; n++) {
+      a = Math.max(0, a - decayPerSec * interval) + dose;
+      if (a >= threshold) return n;
+      if (n > 1 && dose <= decayPerSec * interval) return Infinity;
+    }
+    return Infinity;
+  }
+  const nTxt = (n) => (n === Infinity ? "nie" : String(n));
+
+  function overdoseRows(c, out, only) {
+    const tick = num(c, "OverdoseTickTime");
+    const die = num(c, "OverdoseAgentDieOffSpeed");
+    const T1 = num(c, "OverdoseAgentThresholdMalusActivation");
+    const T2 = num(c, "OverdoseAgentThresholdVomit");
+    const T3 = num(c, "OverdoseAgentMAXCOUNT");
+    const meds = OD_MEDS.map(([k, label, lastKey]) => {
+      const per = num(c, "Overdose" + k + "PerTick");
+      const known = !!lastKey && Number.isFinite(num(c, lastKey));
+      const dur = known ? num(c, lastKey) : od.unknownDur;
+      const ticks = Math.max(1, Math.floor(dur / tick));
+      return { k: k, label: label, per: per, known: known, dur: dur, ticks: ticks, dose: per * ticks };
+    }).filter((m) => Number.isFinite(m.per) && m.per > 0 && (!only || m.k === only));
+    if (!meds.length) return;
+    out.push(head("Überdosis durch Medikamente – Annahme: während der Wirkdauer wird bei jedem Überdosis-Takt (" + fmt(tick) + " s) der Wert „Overdose…PerTick“ addiert"));
+    out.push(row("Schwellen", "Malus ab " + fmt(T1, 0) + " · Erbrechen ab " + fmt(T2, 0) + " · Maximum " + fmt(T3, 0), "Abbau " + fmt(die * 60, 1) + " pro Minute (" + fmt(die) + " pro Sekunde)"));
+    out.push(head("Wirkstoff pro Dosis (eine Tablette/Spritze)"));
+    meds.forEach((m) =>
+      out.push(row(m.label, fmt(m.dose, 1), fmt(m.per) + " × " + m.ticks + " Takte (Wirkdauer " + fmtTime(m.dur) + (m.known ? "" : " – Annahme, siehe oben") + ") · baut sich in " + fmtTime(m.dose / die) + " ab"))
+    );
+    out.push(head("Wie viele Dosen bis zur Überdosis?"));
+    meds.forEach((m) => {
+      const s1 = dosesTo(T1, m.dose, die, 0);
+      const s2 = dosesTo(T2, m.dose, die, 0);
+      const s3 = dosesTo(T3, m.dose, die, 0);
+      const i1 = dosesTo(T1, m.dose, die, od.interval);
+      const dz = (n) => n + (n === 1 ? " Dosis" : " Dosen");
+      out.push(row(m.label, "Malus ab " + dz(s1), "Erbrechen ab " + dz(s2) + ", Maximum bei " + dz(s3) + " (alle auf einmal) · bei Einnahme alle " + fmtTime(od.interval) + ": Malus " + (i1 === Infinity ? "nie (der Abbau ist schneller als eine Dosis)" : "ab " + dz(i1))));
+    });
+    if (!only && meds.length > 1) {
+      const total = meds.reduce((a, m) => a + m.dose, 0);
+      out.push(head("Alles gleichzeitig (je 1 Dosis von jedem)"));
+      out.push(row("Summe", fmt(total, 1), total >= T1 ? "über der Malus-Schwelle – Überdosis" + (total >= T2 ? ", auch Erbrechen" : "") : "unter der Malus-Schwelle (" + fmt(T1, 0) + ")"));
+    }
+  }
+
+  /** Eingabefelder für die Annahmen der Überdosis-Rechnung (Abschnitte mit Medikamenten). */
+  function calcControls(secKey, redraw) {
+    if (["Overdose", "Ibuprofene", "Vikasol", "Diazepam", "AntiRad"].indexOf(secKey) < 0) return null;
+    const mk = (label, key, tip) => {
+      const inp = h("input", { type: "number", step: "any", min: "0", value: od[key], style: "max-width:100px" });
+      inp.addEventListener("input", () => {
+        const v = Number(inp.value);
+        if (Number.isFinite(v) && v >= 0) {
+          od[key] = v;
+          redraw();
+        }
+      });
+      return h("div", { class: "field" }, [h("label", {}, [label, tipNode(tip)]), inp]);
+    };
+    return h("div", { class: "toolbar mp-assume" }, [
+      mk("Einnahme-Abstand (s)", "interval", "Für die Rechnung „wie viele Dosen bis zur Überdosis“: Zeit zwischen zwei Dosen. Der Wirkstoff baut sich dazwischen ab."),
+      mk("Wirkdauer ohne Config (s)", "unknownDur", "Für Medikamente ohne eigene Dauer in der MedPlus-Config (Schmerzmittel, Tetracyclin, Morphin, Epinephrin, Kohle) ist die Wirkdauer unbekannt – hier eine Annahme eintragen."),
+      h("span", { class: "muted small", text: "Annahmen für die Live-Rechnung – werden nicht in die Datei geschrieben." }),
+    ]);
+  }
+
   const CALC = {
     BrainConcussion(c, out) {
       const lt = num(c, "modifierLastingTime");
@@ -242,10 +328,19 @@
       const minute = 60 / tt;
       out.push(head("Folgen pro Minute (ab Malus-Schwelle)"));
       [["OverdoseHealthLossPerTick", "Lebensverlust"], ["OverdoseShockLossPerTick", "Schock"], ["OverdoseStaminaLossPerTick", "Ausdauerverlust"]].forEach(([k, l]) => out.push(row(l, fmt(num(c, k) * minute, 1) + " / min", fmt(num(c, k)) + " je Takt")));
-      out.push(head("Wie schnell die Medikamente die Überdosis aufbauen (je Minute)"));
-      Object.keys(c)
-        .filter((k) => /^Overdose\w+PerTick$/.test(k) && !/(Health|Shock|Stamina|Charcoal)/.test(k))
-        .forEach((k) => out.push(row(k.replace(/^Overdose|PerTick$/g, ""), fmt(c[k] * minute, 1) + " / min", "")));
+      overdoseRows(c, out, "");
+    },
+    Ibuprofene(c, out) {
+      overdoseRows(c, out, "Ibuprofene");
+    },
+    Vikasol(c, out) {
+      overdoseRows(c, out, "Vikasol");
+    },
+    Diazepam(c, out) {
+      overdoseRows(c, out, "Diazepam");
+    },
+    AntiRad(c, out) {
+      overdoseRows(c, out, "AntiRad");
     },
     Overweight(c, out) {
       out.push(head("Traglast"));
@@ -645,6 +740,8 @@
       if (c) calcHost.appendChild(c);
     };
     redrawCalc();
+    const ctl = calcControls(secKey, redrawCalc);
+    if (ctl) box.appendChild(ctl);
     box.appendChild(calcHost);
     if (sec.keys.some((x) => /TickTime$/i.test(x[0]))) {
       box.appendChild(
