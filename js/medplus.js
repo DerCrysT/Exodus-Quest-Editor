@@ -65,10 +65,20 @@
   const warn = (t) => ({ k: "warn", t: t });
   const ok = (t) => ({ k: "ok", t: t });
 
+  // Ganzzahl-Schalter mit mehreren Stufen (laut Doku)
+  const ENUMS = {
+    BulletInfluence: [[-1, "-1 – Kugel bleibt eher stecken"], [0, "0 – zufällig"], [1, "1 – Kugel geht eher durch"]],
+    BrokenArmDropItemOnModifierActivation: [[0, "0 – Item nie fallen lassen"], [1, "1 – nur nicht passende Items fallen lassen"], [2, "2 – immer fallen lassen"]],
+    BrokenArmItemAvailableTobeCarried: [[0, "0 – keine Waffen/schweren Items"], [1, "1 – nur Pistolen und leichte Items"], [2, "2 – alle Items"]],
+    MentalDeathTouchHalveOrSubOrShock: [[0, "0 – Leben halbieren"], [1, "1 – Leben abziehen"], [2, "2 – Schock anwenden"]],
+  };
+
   function isBoolKey(item, key) {
     const v = item.json[key];
-    if (v !== 0 && v !== 1) return false;
-    return /(enable|enabel|norun|dropitem|canclimb|carried|forcewakeup|disable|limp|halve|or_hp|based|cure$|^bulletinfluence$|available|^regenhealth)/i.test(key) && !/(Chance|Time|Tick)/i.test(key);
+    if (ENUMS[key] || (v !== 0 && v !== 1)) return false;
+    const d = T().docOf(key);
+    if (d) return d.type === "bool" && !/(Chance|Time|Tick)/i.test(key);
+    return /(enable|enabel|norun|canclimb|forcewakeup|disable|limp|halve|or_hp|based|cure$|^regenhealth)/i.test(key) && !/(Chance|Time|Tick)/i.test(key);
   }
 
   // ---------------------------------------------------------------- Live-Berechnungen
@@ -153,8 +163,8 @@
     },
     StoppingCut(c, out) {
       out.push(head("Infektionsrisiko beim Schließen"));
-      out.push(row("Ohne Item", fmt(num(c, "StoppingCutChanceToGetInfectOnCloseNoItem") * 100, 1) + " %", "falls der Wert ein Faktor 0–1 ist (0,4 = 40 %)"));
-      out.push(row("Mit schmutzigem Item", fmt(num(c, "StoppingCutChanceToGetInfectOnCloseDirtyItem") * 100, 1) + " %", "falls der Wert ein Faktor 0–1 ist"));
+      out.push(row("Sich selbst schließende Wunde", fmt(num(c, "StoppingCutChanceToGetInfectOnCloseNoItem") * 100, 1) + " %", "Faktor " + fmt(num(c, "StoppingCutChanceToGetInfectOnCloseNoItem")) + " (Vanilla 0,40)"));
+      out.push(row("Nicht desinfizierter Verband", fmt(num(c, "StoppingCutChanceToGetInfectOnCloseDirtyItem") * 100, 1) + " %", "Faktor " + fmt(num(c, "StoppingCutChanceToGetInfectOnCloseDirtyItem")) + " (Vanilla 0,15)"));
       out.push(row("Blutstillung dauert", fmtTime(num(c, "StoppingCutTimeSimpleCure")), ""));
     },
     Ematoma(c, out) {
@@ -218,8 +228,8 @@
         out.push(row(l, fmt(num(c, k) / vod, 0), "Schwelle " + fmt(num(c, k), 0) + " ÷ " + fmt(vod, 3) + " je Einheit"))
       );
       out.push(head("Abbau"));
-      out.push(row("Vom Maximum bis nüchtern", fmtTime((num(c, "DrunkenessAgentMAXCOUNT") - num(c, "DrunkAgentThresholdDeActivation")) / die * tt), fmt(die) + " je Takt à " + fmt(tt) + " s"));
-      out.push(row("Von „Ohnmacht“ bis nüchtern", fmtTime((num(c, "DrunkAgentThresholdFaint") - num(c, "DrunkAgentThresholdDeActivation")) / die * tt), ""));
+      out.push(row("Vom Maximum bis nüchtern", fmtTime((num(c, "DrunkenessAgentMAXCOUNT") - num(c, "DrunkAgentThresholdDeActivation")) / die), fmt(die) + " pro Sekunde (laut Doku)"));
+      out.push(row("Von „Ohnmacht“ bis nüchtern", fmtTime((num(c, "DrunkAgentThresholdFaint") - num(c, "DrunkAgentThresholdDeActivation")) / die), ""));
       const g = ["DrunkAgentThresholdDeActivation", "DrunkAgentThresholdActivation", "DrunkAgentThresholdVomit", "DrunkAgentThresholdFaint", "DrunkenessAgentMAXCOUNT"].map((k) => num(c, k));
       if (g.some((v, i) => i && v < g[i - 1])) out.push(warn("Die Schwellen sollten aufsteigen: Nüchtern < Betrunken < Erbrechen < Ohnmacht < Maximum."));
     },
@@ -227,8 +237,8 @@
       const tt = num(c, "OverdoseTickTime");
       const die = num(c, "OverdoseAgentDieOffSpeed");
       out.push(head("Abbau"));
-      out.push(row("Vom Maximum bis 0", fmtTime(num(c, "OverdoseAgentMAXCOUNT") / die * tt), fmt(die) + " je Takt à " + fmt(tt) + " s"));
-      out.push(row("Von „Malus“ bis 0", fmtTime(num(c, "OverdoseAgentThresholdMalusActivation") / die * tt), ""));
+      out.push(row("Vom Maximum bis 0", fmtTime(num(c, "OverdoseAgentMAXCOUNT") / die), fmt(die) + " pro Sekunde (laut Doku)"));
+      out.push(row("Von „Malus“ bis 0", fmtTime(num(c, "OverdoseAgentThresholdMalusActivation") / die), ""));
       const minute = 60 / tt;
       out.push(head("Folgen pro Minute (ab Malus-Schwelle)"));
       [["OverdoseHealthLossPerTick", "Lebensverlust"], ["OverdoseShockLossPerTick", "Schock"], ["OverdoseStaminaLossPerTick", "Ausdauerverlust"]].forEach(([k, l]) => out.push(row(l, fmt(num(c, k) * minute, 1) + " / min", fmt(num(c, k)) + " je Takt")));
@@ -251,15 +261,17 @@
     Sleep(c, out) {
       const tt = num(c, "SleepTickTime");
       const hour = 3600 / tt;
-      out.push(head("Schlafaufbau pro Stunde (relativ)"));
+      out.push(head("Schlafaufbau pro Stunde (Multiplikator = 1 + Zuschläge, laut Doku)"));
       const base = num(c, "SleepGainDefaultPerTick");
-      out.push(row("Standard", fmt(base * hour, 0), ""));
-      [["SleepGainIfIsWarm", "Wärme"], ["SleepGainIfIsCover", "Deckung"], ["SleepGainIfIsNight", "Nacht"], ["SleepGainIfIsTeddy", "Teddy"], ["SleepGainIfIsSleepBag", "Schlafsack"]].forEach(([k, l]) => {
-        const v = num(c, k);
-        out.push(row("+ " + l, "+" + fmt(v * hour, 0), "Zuschlag " + fmt(v) + " je Takt"));
+      out.push(row("Ohne Zuschläge (×1)", fmt(base * hour, 0), fmt(base) + " je Takt à " + fmt(tt) + " s"));
+      const add = [["SleepGainIfIsWarm", "Wärme"], ["SleepGainIfIsCover", "Deckung"], ["SleepGainIfIsNight", "Nacht"], ["SleepGainIfIsTeddy", "Teddy"], ["SleepGainIfIsSleepBag", "Schlafsack"]];
+      add.forEach(([k, l]) => {
+        const m = 1 + num(c, k);
+        out.push(row("Nur " + l, fmt(base * m * hour, 0), "× " + fmt(m)));
       });
-      const all = base + ["SleepGainIfIsWarm", "SleepGainIfIsCover", "SleepGainIfIsNight", "SleepGainIfIsTeddy", "SleepGainIfIsSleepBag"].reduce((s, k) => s + num(c, k), 0);
-      out.push(row("Alles zusammen", fmt(all * hour, 0), (fmt(all / base, 1)) + "× Standard (falls sich die Zuschläge addieren)"));
+      const mult = 1 + add.reduce((s, [k]) => s + num(c, k), 0);
+      out.push(row("Alles zusammen", fmt(base * mult * hour, 0), "× " + fmt(mult) + " (Wärme + Deckung + Nacht + Teddy + Schlafsack)"));
+      out.push(row("Zeit für 1000 Schlafwert (Beispiel)", fmtTime(1000 / (base * mult) * tt), "mit allen Zuschlägen; ohne: " + fmtTime(1000 / base * tt)));
       out.push(head("Dauer"));
       out.push(row("Schlafzyklus", fmtTime(num(c, "SleepDuration")), fmt(num(c, "SleepDuration") / 3600, 1) + " Stunden"));
     },
@@ -272,7 +284,7 @@
     Mental(c, out) {
       const tt = num(c, "MentalTickTime");
       out.push(head("Mentalwert"));
-      out.push(row("Verlust pro Stunde", fmt(num(c, "MentalStatLossPerTick") * 3600 / tt, 0), fmt(num(c, "MentalStatLossPerTick")) + " alle " + fmt(tt) + " s"));
+      out.push(row("Verlust pro Stunde", fmt(num(c, "MentalStatLossPerTick") * 3600 / tt, 0), fmt(num(c, "MentalStatLossPerTick")) + " alle " + fmt(tt) + " s – gilt nur, wenn „Wahnsinn“ (MentalEnableMadness) an ist"));
       const kp = num(c, "MentalInsertByKillingPlayer");
       const kz = num(c, "MentalInsertByKillingZombie");
       out.push(row("Spieler töten ≙ Zombies töten", fmt(kp / kz, 1) + " Zombies", fmt(kp, 0) + " ÷ " + fmt(kz, 0)));
@@ -586,6 +598,12 @@
     if (type === "a") control = chipEditor(item, key, key === "SleepingBeds" || key === "Helms" ? classSuggest("CfgVehicles") : null, afterChange);
     else if (type === "s") {
       control = h("input", { type: "text", value: val, oninput: (e) => setVal(item, key, e.target.value) });
+    } else if (ENUMS[key]) {
+      control = h(
+        "select",
+        { onchange: (e) => (setVal(item, key, Number(e.target.value)), afterChange && afterChange()) },
+        ENUMS[key].map(([v, l]) => h("option", { value: String(v), text: l, selected: v === val }))
+      );
     } else if (isBoolKey(item, key)) {
       control = h("label", { class: "checkrow" }, [
         h("input", {
@@ -628,6 +646,14 @@
     };
     redrawCalc();
     box.appendChild(calcHost);
+    if (sec.keys.some((x) => /TickTime$/i.test(x[0]))) {
+      box.appendChild(
+        h("div", { class: "issue ok mp-note" }, [
+          "Tipp: Alle Takt-Zeiten lassen sich zentral vereinheitlichen (z. B. überall 1 s) – die Pro-Takt-Werte werden dabei mitgerechnet. ",
+          h("a", { href: "#", text: "Zu „Tick-Zeiten (alle)“", onclick: (e) => (e.preventDefault(), setView({ type: "ticks" })) }),
+        ])
+      );
+    }
     const grid = h("div", { class: "grid2" });
     const done = new Set();
     sec.keys.forEach(([k, t]) => {
@@ -848,6 +874,183 @@
     render();
   }
 
+  // ---------------------------------------------------------------- Tick-Zeiten zentral
+  const EXTRA_TICKS = { MentalRecoverByTeddyBearTick: { sec: "Mental", deps: ["MentalTeddyBearInHandRecoverPerTick"] } };
+  const tickState = { target: 1, scaleQty: true, scaleChance: true, off: {}, depOff: {}, newTick: {} };
+
+  /** Alle Takt-Gruppen: Takt-Schlüssel je Abschnitt mit den davon abhängigen "pro Takt"-Werten. */
+  function tickGroups(item) {
+    const c = item.json;
+    const out = [];
+    cat().secs.forEach((s) => {
+      const keys = s.keys.map((x) => x[0]);
+      const tk = keys.find((k) => /TickTime$/i.test(k) && typeof c[k] === "number");
+      const groups = [];
+      if (tk) groups.push({ tickKey: tk, extra: [] });
+      Object.keys(EXTRA_TICKS).forEach((k) => EXTRA_TICKS[k].sec === s.key && typeof c[k] === "number" && groups.push({ tickKey: k, extra: EXTRA_TICKS[k].deps }));
+      groups.forEach((g) => {
+        const deps = [];
+        s.keys.forEach(([k, t]) => {
+          if (k === g.tickKey || typeof c[k] !== "number" || c[k] === 0) return;
+          const d = T().docOf(k);
+          const nameHit = /PerTick/i.test(k) || (d && /per tick/i.test(d.comment) && !/per second/i.test(d.comment));
+          const isExtra = g.extra.indexOf(k) > -1;
+          if (!nameHit && !isExtra) return;
+          if (g.tickKey !== tk && !isExtra) return;
+          if (g.tickKey === tk && Object.keys(EXTRA_TICKS).some((x) => EXTRA_TICKS[x].deps.indexOf(k) > -1)) return;
+          const chance = (d && d.unit === "%") || /Chance/i.test(k);
+          let skip = "";
+          if (d && /per second/i.test(d.comment)) skip = "laut Doku „pro Sekunde“ – nicht an den Takt gebunden";
+          else if (t === "i") skip = "Ganzzahl – Umrechnung würde runden";
+          deps.push({ k: k, chance: chance, skip: skip, isInt: t === "i" });
+        });
+        out.push({ sec: s.key, tickKey: g.tickKey, deps: deps, isInt: (cat().byKey[g.tickKey] || {}).t === "i" });
+      });
+    });
+    return out;
+  }
+
+  function convert(dep, oldV, r) {
+    if (dep.chance) {
+      const p = Math.min(1, Math.max(0, oldV / 100));
+      return Math.round(100 * (1 - Math.pow(1 - p, r)) * 10000) / 10000;
+    }
+    return Math.round(oldV * r * 10000) / 10000;
+  }
+
+  function renderTicks(item, box) {
+    const c = item.json;
+    const groups = tickGroups(item);
+    box.appendChild(
+      h("div", { class: "mp-sec-head" }, [
+        h("h2", { text: "Tick-Zeiten (alle)" }),
+        h("div", { class: "muted", text: "Jede Verletzung/Wirkung rechnet in einem eigenen Takt (…TickTime, in Sekunden). Mit gleichem Takt überall (z. B. 1 Sekunde) wird „pro Takt“ zu „pro Sekunde“ – das macht das Einstellen viel einfacher." }),
+      ])
+    );
+    const info = h("div", { class: "mp-calc" }, [
+      h("div", { class: "check-head", text: "So wird umgerechnet" }),
+      h("div", { class: "small", text: "Damit sich das Verhalten im Spiel nicht ändert, werden die „pro Takt“-Werte mitgerechnet: Mengen (Blutverlust, Heilung …) × (neuer Takt ÷ alter Takt); Chancen in % so, dass die Wahrscheinlichkeit pro Sekunde gleich bleibt (1 − (1 − p)^Faktor). Dauer- und Zeitwerte in Sekunden bleiben unverändert. Du siehst jeden Wert vorher und kannst einzelne Gruppen oder Werte abwählen." }),
+    ]);
+    box.appendChild(info);
+
+    const targetIn = h("input", { type: "number", step: "any", min: "0.1", value: tickState.target, style: "max-width:110px" });
+    const scaleQty = h("label", { class: "checkrow" }, [h("input", { type: "checkbox", checked: tickState.scaleQty, onchange: (e) => ((tickState.scaleQty = e.target.checked), draw()) }), "Mengen pro Takt mitrechnen"]);
+    const scaleCh = h("label", { class: "checkrow" }, [h("input", { type: "checkbox", checked: tickState.scaleChance, onchange: (e) => ((tickState.scaleChance = e.target.checked), draw()) }), "Chancen (%) pro Takt mitrechnen"]);
+    const tbody = h("tbody");
+    const sumNote = h("div", { class: "help" });
+
+    const plan = () => {
+      const res = [];
+      groups.forEach((g) => {
+        const key = g.sec + "/" + g.tickKey;
+        const oldT = c[g.tickKey];
+        const newT = g.isInt ? Math.round(tickState.newTick[key] !== undefined ? tickState.newTick[key] : tickState.target) : tickState.newTick[key] !== undefined ? tickState.newTick[key] : tickState.target;
+        const on = !tickState.off[key] && Number.isFinite(newT) && newT > 0 && newT !== oldT;
+        const r = newT / oldT;
+        const deps = g.deps.map((d) => {
+          const dk = key + "/" + d.k;
+          const wanted = (d.chance ? tickState.scaleChance : tickState.scaleQty) && !d.skip && !tickState.depOff[dk];
+          return { d: d, dk: dk, oldV: c[d.k], newV: on && Number.isFinite(r) ? convert(d, c[d.k], r) : c[d.k], wanted: wanted };
+        });
+        res.push({ g: g, key: key, oldT: oldT, newT: newT, on: on, deps: deps });
+      });
+      return res;
+    };
+
+    const draw = () => {
+      clear(tbody);
+      const rows = plan();
+      let tickN = 0;
+      let depN = 0;
+      rows.forEach((p) => {
+        if (p.on) {
+          tickN++;
+          depN += p.deps.filter((x) => x.wanted).length;
+        }
+        const tIn = h("input", {
+          type: "number",
+          step: "any",
+          min: "0.1",
+          value: p.newT,
+          style: "max-width:90px",
+          oninput: (e) => {
+            const v = Number(e.target.value);
+            if (Number.isFinite(v) && v > 0) tickState.newTick[p.key] = v;
+            else delete tickState.newTick[p.key];
+            draw();
+          },
+        });
+        tbody.appendChild(
+          h("tr", { class: p.on ? "" : "muted" }, [
+            h("td", {}, [h("input", { type: "checkbox", checked: !tickState.off[p.key], onchange: (e) => ((tickState.off[p.key] = !e.target.checked), draw()) })]),
+            h("td", { text: T().titleOf(p.g.sec) }),
+            h("td", { class: "mono small", text: p.g.tickKey }),
+            h("td", { class: "mono", text: fmt(p.oldT) + " s" }),
+            h("td", {}, [tIn]),
+            h("td", { class: "small", text: p.g.deps.length ? p.deps.filter((x) => x.wanted).length + " von " + p.g.deps.length + " Werten" : "keine Pro-Takt-Werte" }),
+          ])
+        );
+        if (p.on && p.deps.length) {
+          const det = h("details", { class: "mp-det" }, [h("summary", { class: "small muted", text: "Werte anzeigen (" + p.deps.length + ")" })]);
+          const t = h("table", { class: "ptable" }, [h("tbody", {}, p.deps.map((x) => h("tr", { class: x.d.skip ? "muted" : "" }, [
+            h("td", {}, [h("input", { type: "checkbox", disabled: !!x.d.skip, checked: x.wanted, onchange: (e) => ((tickState.depOff[x.dk] = !e.target.checked), draw()) })]),
+            h("td", { class: "mono small", text: x.d.k }),
+            h("td", { class: "mono small", text: fmt(x.oldV, 4) + (x.d.chance ? " %" : "") }),
+            h("td", { class: "small", text: "→" }),
+            h("td", { class: "mono small", style: "color:var(--accent)", text: x.wanted ? fmt(x.newV, 4) + (x.d.chance ? " %" : "") : "unverändert" }),
+            h("td", { class: "small muted", text: x.d.skip || (x.d.chance ? "Chance" : "Menge") }),
+          ]))) ]);
+          det.appendChild(t);
+          tbody.appendChild(h("tr", {}, [h("td", {}), h("td", { colspan: 5 }, [det])]));
+        }
+      });
+      sumNote.textContent = tickN + " Takt(e) werden geändert, " + depN + " Pro-Takt-Werte werden umgerechnet.";
+      applyBtn.disabled = !tickN;
+    };
+
+    const applyBtn = h("button", {
+      class: "btn primary",
+      type: "button",
+      text: "Anwenden",
+      onclick: () => {
+        const rows = plan().filter((p) => p.on);
+        let ticks = 0;
+        let vals = 0;
+        P().mutate(item.uid, (j) => {
+          rows.forEach((p) => {
+            j[p.g.tickKey] = p.newT;
+            ticks++;
+            p.deps.forEach((x) => {
+              if (!x.wanted) return;
+              j[x.d.k] = x.newV;
+              vals++;
+            });
+          });
+        });
+        EQE.toast(ticks + " Takt-Zeiten und " + vals + " Werte angepasst. Prüfe das Ergebnis in den Abschnitten (↺ setzt auf den geladenen Wert zurück).");
+        tickState.newTick = {};
+        render();
+      },
+    });
+
+    box.appendChild(
+      h("div", { class: "section" }, [
+        h("div", { class: "section-body" }, [
+          h("div", { class: "toolbar" }, [
+            h("div", { class: "field" }, [h("label", { text: "Ziel-Takt für alle (Sekunden)" }), targetIn]),
+            h("button", { class: "btn small", type: "button", text: "Auf alle übernehmen", onclick: () => ((tickState.target = Number(targetIn.value) || 1), (tickState.newTick = {}), draw()) }),
+            scaleQty,
+            scaleCh,
+          ]),
+          h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["", "Abschnitt", "Takt-Wert", "Aktuell", "Neu (s)", "Betroffen"].map((t) => h("th", { text: t })))]), tbody])]),
+          sumNote,
+          h("div", { class: "toolbar" }, [applyBtn]),
+        ]),
+      ])
+    );
+    draw();
+  }
+
   function fileList() {
     return [
       ["mp_zombie", "Zombie-Schaden"],
@@ -925,6 +1128,8 @@
         nav.appendChild(h("button", { class: "mp-navbtn" + (st.view.type === "sec" && st.view.key === sk ? " active" : ""), type: "button", text: T().titleOf(sk), onclick: () => ((st.search = ""), setView({ type: "sec", key: sk })) }));
       });
     });
+    nav.appendChild(h("div", { class: "nav-title", text: "Werkzeuge" }));
+    nav.appendChild(h("button", { class: "mp-navbtn" + (st.view.type === "ticks" ? " active" : ""), type: "button", text: "Tick-Zeiten (alle)", onclick: () => ((st.search = ""), setView({ type: "ticks" })) }));
     nav.appendChild(h("div", { class: "nav-title", text: "Tabellen" }));
     fileList().forEach(([k, l]) => {
       nav.appendChild(h("button", { class: "mp-navbtn" + (st.view.type === "file" && st.view.key === k ? " active" : ""), type: "button", text: l + (fileItem(k) ? "" : " (nicht geladen)"), onclick: () => ((st.search = ""), setView({ type: "file", key: k })) }));
@@ -954,6 +1159,7 @@
       return;
     }
     if (st.view.type === "search") return searchView(item, content);
+    if (st.view.type === "ticks") return renderTicks(item, content);
     renderSection(item, st.view.key, content);
   }
 

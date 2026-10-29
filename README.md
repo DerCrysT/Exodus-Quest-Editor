@@ -49,7 +49,7 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
     `WeaponDamageTrim.json`, `EdibleForMSA.json`, `MedPlusEdibleSoupTrim.json`). Alle ~650 Werte sind nach Themen sortiert (Verletzungen, Körper, Psyche, Medikamente, Suppen), mit „?“-Erklärung
     und **Live-Berechnung** je Abschnitt (z. B. Verbluten in Minuten, Wirkung über die Dauer, Alkohol-Menge bis Betrunken, Zeit bis Herzinfarkt) sowie Plausibilitätsprüfungen
     (doppelte Einträge, ungleich lange Listen, Summe Stecken+Durchschuss ≠ 100 %). Änderungen werden wie bei Dialogen/Tradern per „Änderungen speichern“ in die JSON-Dateien zurückgeschrieben
-    (Originalformat: 4 Leerzeichen, Kommazahlen mit `.0`). Die Erklärungen sind aus den Wertenamen abgeleitet.
+    (Originalformat: 4 Leerzeichen, Kommazahlen mit `.0`). Die „?“-Texte zitieren die originale MedPlus-Doku (`MedPlus explanation.txt`, falls im Ordner) und ergänzen sie. **Tick-Zeiten (alle):** setzt alle Takt-Zeiten (z. B. überall 1 s) und rechnet die „pro Takt“-Werte und Chancen so mit, dass sich das Verhalten nicht ändert.
 
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
 Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).

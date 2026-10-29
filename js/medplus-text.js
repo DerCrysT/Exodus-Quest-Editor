@@ -124,8 +124,8 @@ window.EQE = window.EQE || {};
     SlipperyArmDamage: ["Armschaden: Höhe", "Schaden am Arm bei Verletzung."],
     StoppingCutEnable: ["Einfacher Verband an/aus", "1 = das einfache Verbinden (Lappen) ist aktiv."],
     StoppingCutTimeSimpleCure: ["Dauer bis Blutstillung (s)", "Wie lange eine einfache Wunde nach dem Verband braucht, bis die Blutung gestoppt ist."],
-    StoppingCutChanceToGetInfectOnCloseNoItem: ["Infektion: ohne Item", "Risiko (Faktor/Prozent laut Config) einer Infektion beim Schließen ohne Item."],
-    StoppingCutChanceToGetInfectOnCloseDirtyItem: ["Infektion: schmutziges Item", "Risiko einer Infektion beim Schließen mit schmutzigem Item."],
+    StoppingCutChanceToGetInfectOnCloseNoItem: ["Infektion: sich selbst schließende Wunde", "Faktor 0–1 (0,4 = 40 %): Chance auf Wundinfektion bei einer Wunde, die sich selbst schließt (Vanilla: 0,40)."],
+    StoppingCutChanceToGetInfectOnCloseDirtyItem: ["Infektion: nicht desinfizierter Verband", "Faktor 0–1 (0,1 = 10 %): Chance auf Wundinfektion beim Verbinden mit nicht desinfiziertem Item (Vanilla: 0,15)."],
     regenHealthWithCutsOrBulletInside: ["Regeneration trotz Wunde", "1 = Leben regeneriert auch bei Schnitt oder steckender Kugel."],
     lowStatFoodNoRun: ["Kein Rennen bei Hunger", "1 = bei sehr niedriger Nahrung kann man nicht rennen."],
     lowStatWaterNoRun: ["Kein Rennen bei Durst", "1 = bei sehr niedrigem Wasser kann man nicht rennen."],
@@ -143,8 +143,8 @@ window.EQE = window.EQE || {};
     KnifeModifierBleedTickTime: ["Blut-Takt (s)", "Sekunden zwischen zwei Blutverlust-Berechnungen."],
     KnifePainSoundChance: ["Schmerzgeräusch-Chance", "Chance in Prozent pro Takt auf ein Schmerzgeräusch."],
     BulletDMGEnable: ["Schusswunden an/aus", "1 = das erweiterte Kugelmodell ist aktiv."],
-    BulletInfluence: ["Kugel-Einfluss", "1 = zusätzlicher Einfluss auf die Chance (siehe „Einfluss-Zuschlag“)."],
-    BulletInfluenceAdder: ["Einfluss-Zuschlag", "Zuschlag auf die Chance, wenn der Kugel-Einfluss aktiv ist."],
+    BulletInfluence: ["Kugel-Einfluss", "Lenkt das Ergebnis: −1 = Kugel bleibt eher stecken, 0 = zufällig, 1 = Kugel geht eher durch."],
+    BulletInfluenceAdder: ["Einfluss-Zuschlag", "Wird zum Zufallswert addiert (Zufall Stecken + Zuschlag > Zufall Durchschuss), wenn der Einfluss ≠ 0 ist."],
     bulletDamageChanceHit: ["Kugel bleibt stecken (%)", "Chance in Prozent, dass die Kugel im Körper stecken bleibt (statt durchzugehen). Zusammen mit „Durchschuss“ sollten es 100 % sein."],
     bulletDamageChanceTrepassing: ["Durchschuss (%)", "Chance in Prozent, dass die Kugel durchgeht. Zusammen mit „Kugel bleibt stecken“ sollten es 100 % sein."],
     BulletChanceToCreateCutBadExtract: ["Schnitt bei schlechter Entnahme (%)", "Chance auf einen zusätzlichen Schnitt, wenn die Kugel schlecht entfernt wird."],
@@ -227,7 +227,7 @@ window.EQE = window.EQE || {};
     RegenLegWhileBrokenAndSplint: ["Regeneration gebrochen + Schiene", "Bein-Regeneration mit Schiene."],
     DrunkenessEnable: ["Betrunkenheit an/aus", "1 = Alkoholwirkung ist aktiv."],
     DrunkenessAgentMAXCOUNT: ["Maximale Alkoholmenge", "Obergrenze des Alkohol-Wirkstoffs im Körper."],
-    DrunkenessAgentDieOffSpeed: ["Abbau je Takt", "Alkohol, der pro Takt abgebaut wird."],
+    DrunkenessAgentDieOffSpeed: ["Abbau je Sekunde", "Wirkstoff, der laut Doku automatisch pro SEKUNDE abgebaut wird."],
     DrunkAgentThresholdActivation: ["Betrunken ab", "Alkoholmenge, ab der die Betrunkenheits-Effekte beginnen."],
     DrunkAgentThresholdDeActivation: ["Nüchtern ab", "Alkoholmenge, unter der die Effekte enden."],
     DrunkAgentInsertedPerQuantityVodka: ["Alkohol je Einheit Wodka", "Wirkstoff, den jede getrunkene Einheit Wodka hinzufügt."],
@@ -245,7 +245,7 @@ window.EQE = window.EQE || {};
     DrunkTickTime: ["Takt (s)", "Berechnungstakt der Betrunkenheit."],
     OverdoseEnable: ["Überdosis an/aus", "1 = Überdosierung ist aktiv."],
     OverdoseAgentMAXCOUNT: ["Maximale Überdosis-Menge", "Obergrenze des Überdosis-Wirkstoffs."],
-    OverdoseAgentDieOffSpeed: ["Abbau je Takt", "Überdosis-Wirkstoff, der pro Takt abgebaut wird."],
+    OverdoseAgentDieOffSpeed: ["Abbau je Sekunde", "Überdosis-Wirkstoff, der laut Doku automatisch pro SEKUNDE abgebaut wird."],
     OverdoseAgentThresholdMalusActivation: ["Malus ab", "Wirkstoffmenge, ab der die Überdosis-Folgen beginnen."],
     OverdoseAgentThresholdVomit: ["Erbrechen ab", "Wirkstoffmenge, ab der Erbrechen möglich ist."],
     OverdoseVomitChancePerTick: ["Erbrechen: Chance je Takt (%)", "Chance pro Takt, sich zu übergeben."],
@@ -304,12 +304,12 @@ window.EQE = window.EQE || {};
     SleepingBeds: ["Schlafplätze", "Klassennamen von Schlafsäcken/Betten, in denen man schlafen kann."],
     enableSitSleep: ["Im Sitzen schlafen", "1 = auch im Sitzen schlafen."],
     SleepDuration: ["Schlafdauer (s)", "Länge des Schlafzyklus in Sekunden (14400 = 4 Stunden)."],
-    SleepGainDefaultPerTick: ["Zuwachs je Takt (Standard)", "Schlafzuwachs pro Takt ohne besondere Umstände."],
-    SleepGainIfIsWarm: ["Zuwachs bei Wärme", "Zuschlag pro Takt, wenn es warm ist."],
-    SleepGainIfIsCover: ["Zuwachs bei Deckung", "Zuschlag pro Takt unter Dach/Deckung."],
-    SleepGainIfIsNight: ["Zuwachs nachts", "Zuschlag pro Takt in der Nacht."],
-    SleepGainIfIsTeddy: ["Zuwachs mit Teddy", "Zuschlag pro Takt mit Teddybär."],
-    SleepGainIfIsSleepBag: ["Zuwachs im Schlafsack", "Zuschlag pro Takt im Schlafsack."],
+    SleepGainDefaultPerTick: ["Zuwachs je Takt (Basis)", "Schlaf, der pro Takt ohne Multiplikator (×1) erholt wird. Wird mit dem Multiplikator aus den Zuschlägen multipliziert."],
+    SleepGainIfIsWarm: ["Multiplikator-Zuschlag: Wärme", "Wird laut Doku zum Schlaf-Multiplikator ADDIERT (Multiplikator = 1 + alle zutreffenden Zuschläge)."],
+    SleepGainIfIsCover: ["Multiplikator-Zuschlag: Deckung", "Wird zum Schlaf-Multiplikator addiert, wenn man unter Dach/Deckung schläft."],
+    SleepGainIfIsNight: ["Multiplikator-Zuschlag: Nacht", "Wird zum Schlaf-Multiplikator addiert, wenn es Nacht ist."],
+    SleepGainIfIsTeddy: ["Multiplikator-Zuschlag: Teddy", "Wird zum Schlaf-Multiplikator addiert, wenn ein Teddybär dabei ist."],
+    SleepGainIfIsSleepBag: ["Multiplikator-Zuschlag: Schlafsack", "Wird zum Schlaf-Multiplikator addiert, wenn man im Schlafsack schläft."],
     SleepTickTime: ["Takt (s)", "Berechnungstakt des Schlafs."],
     ImmunityDividerBadCondition: ["Immunitäts-Teiler", "Teiler für die Immunität bei schlechtem Zustand (höher = schwächere Immunität)."],
     IgieneEnable: ["Hygiene an/aus", "1 = Hygiene-System ist aktiv."],
@@ -380,16 +380,39 @@ window.EQE = window.EQE || {};
       .trim();
   }
 
-  /** {label, help} für einen Schlüssel. */
-  function info(secKey, key) {
-    const h = H[key];
-    if (h) return { label: h[0], help: h[1] };
-    const s = titleOf(secKey);
-    for (const [re, fn] of PATTERNS) {
-      if (re.test(key)) return { label: pretty(key), help: fn(s) + " (Name im JSON: " + key + ")" };
-    }
-    return { label: pretty(key), help: "Wert für „" + s + "“ (Name im JSON: " + key + ")." };
+  const UNIT_DE = { SEC: "Sekunden", "INT SEC": "Sekunden (Ganzzahl)", QTY: "Menge/Wert", "%": "Prozent", BOOL: "Ein/Aus", INT: "Ganzzahl", "TIME*CALC": "Zeit × Faktor", TIME: "Zeit", FLOAT: "Kommazahl", STRING: "Text", G: "Gramm" };
+
+  function docOf(key) {
+    const d = EQE.MPDoc && EQE.MPDoc[key];
+    return d ? { unit: d[0], comment: d[1], def: d[2], type: d[3] } : null;
   }
 
-  EQE.MPText = { GROUPS: GROUPS, SECTIONS: SECTIONS, info: info, titleOf: titleOf, pretty: pretty };
+  /** {label, help, doc} für einen Schlüssel. Die Doku (MedPlus explanation.txt) wird als Original zitiert. */
+  function info(secKey, key) {
+    const h = H[key];
+    const d = docOf(key);
+    let label;
+    let help;
+    if (h) {
+      label = h[0];
+      help = h[1];
+    } else {
+      label = pretty(key);
+      const s = titleOf(secKey);
+      help = "Wert für „" + s + "“.";
+      for (const [re, fn] of PATTERNS) {
+        if (re.test(key)) {
+          help = fn(s);
+          break;
+        }
+      }
+    }
+    if (d) {
+      const unit = UNIT_DE[d.unit] ? " [" + UNIT_DE[d.unit] + "]" : "";
+      help += " — Original-Doku: " + (d.comment ? "„" + d.comment + "“" : "(kein Kommentar)") + unit + " · Standard laut Doku: " + d.def + ".";
+    }
+    return { label: label, help: help + " (JSON: " + key + ")", doc: d };
+  }
+
+  EQE.MPText = { GROUPS: GROUPS, SECTIONS: SECTIONS, info: info, titleOf: titleOf, pretty: pretty, docOf: docOf };
 })(window.EQE);
