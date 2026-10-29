@@ -39,6 +39,8 @@
     const project = EQE.Overview.initProject(document.getElementById("panel-project"));
     const mapTab = EQE.MapTab.init(document.getElementById("panel-map"));
     refreshers.map = mapTab.refresh;
+    const overrides = EQE.Overrides.init(document.getElementById("panel-overrides"));
+    refreshers.overrides = overrides.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
     refreshers.project = project.refresh;
     refreshers.overview = overview.refresh;

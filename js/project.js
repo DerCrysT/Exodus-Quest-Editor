@@ -26,6 +26,8 @@ window.EQE = window.EQE || {};
 
   /** Verbundener Projektordner (File System Access API), falls per Ordner-Dialog geladen. */
   let rootHandle = null;
+  /** Weitere Teile des Tools, die mit ins ZIP/in den Projektordner geschrieben werden (z. B. Override-Config). */
+  const extras = [];
   const DEL_KEY = "eqe:deleted:v1";
   let items = [];
   /** Im Tool gelöschte Dateien, die aus dem Upload stammen: {kind, path} – werden beim Export mitgelöscht. */
@@ -242,6 +244,7 @@ window.EQE = window.EQE || {};
   }
 
   function clearAll() {
+    if (EQE.Cfg) EQE.Cfg.clear();
     items = [];
     deleted = [];
     rootHandle = null;
@@ -515,9 +518,18 @@ window.EQE = window.EQE || {};
   async function readEntries(entries) {
     const counts = {};
     KINDS.forEach((k) => (counts[k] = 0));
-    const result = { counts, replaced: 0, unknown: [], errors: [] };
+    const result = { counts, replaced: 0, unknown: [], errors: [], configs: 0 };
     for (const e of entries) {
       const name = e.path || e.file.name;
+      if (/(^|\/)config\.cpp$/i.test(name) && EQE.Cfg) {
+        try {
+          EQE.Cfg.ingestText(await e.file.text(), name);
+          result.configs++;
+        } catch (err) {
+          result.errors.push(name + " (" + err.message + ")");
+        }
+        continue;
+      }
       if (!/\.json$/i.test(name)) continue;
       let text;
       try {
@@ -544,6 +556,10 @@ window.EQE = window.EQE || {};
       } catch (err) {
         result.errors.push(name + " (" + err.message + ")");
       }
+    }
+    if (result.configs && EQE.Cfg) {
+      EQE.Cfg.rebuild();
+      if (EQE.Overrides) EQE.Overrides.afterIngest();
     }
     return result;
   }
@@ -597,6 +613,7 @@ window.EQE = window.EQE || {};
     KINDS.forEach((k) => {
       if (r.counts[k]) parts.push(r.counts[k] + " " + KIND_LABEL[k]);
     });
+    if (r.configs) parts.push(r.configs + " config.cpp");
     let msg = parts.length ? parts.join(", ") + " geladen" : "Keine passenden Dateien gefunden";
     if (r.replaced) msg += " (" + r.replaced + " vorhandene ersetzt)";
     if (r.unknown.length) msg += " · " + r.unknown.length + " unbekannte übersprungen";
@@ -750,6 +767,8 @@ window.EQE = window.EQE || {};
       used.add(name.toLowerCase());
       files.push({ name, text: exportText(it) });
     });
+    extras.forEach((x) => x.zipFiles(onlyChanged).forEach((f) => files.push(f)));
+    const extraCount = files.length;
     const dels = pendingDeletes();
     if (dels.length) {
       const nl = "\r\n";
@@ -767,7 +786,7 @@ window.EQE = window.EQE || {};
           "echo Fertig." + nl + "pause" + nl,
       });
     }
-    return { blob: buildZip(files), count: files.length - (dels.length ? 2 : 0), deletes: dels.length };
+    return { blob: buildZip(files), count: files.length - (dels.length ? 2 : 0), deletes: dels.length, extra: extraCount };
   }
 
   // ---------------------------------------------------------------- Direkt in den Projektordner speichern
@@ -780,6 +799,18 @@ window.EQE = window.EQE || {};
   }
 
   /** Geänderte Dateien in den Projektordner schreiben und gelöschte entfernen (Chromium: File System Access API). */
+  /** Wurzelordner des Projekts (erstes Pfadsegment der geladenen Dateien bzw. Name des verbundenen Ordners). */
+  function projectRootName(handle) {
+    if (handle && handle.name && (handle === rootHandle || !items.length)) {
+      const sample = items.find((i) => i.path && i.path.indexOf("/") > -1);
+      if (!sample || sample.path.split("/")[0] === handle.name) return handle.name;
+    }
+    const paths = items.filter((i) => i.path).map((i) => i.path);
+    extras.forEach((x) => x.paths().forEach((p) => paths.push(p)));
+    const firsts = paths.filter((p) => p.indexOf("/") > -1).map((p) => p.split("/")[0]);
+    return firsts.length && firsts.every((f) => f === firsts[0]) ? firsts[0] : null;
+  }
+
   async function saveToFolder() {
     if (!canWriteFolder()) {
       EQE.toast("Dein Browser kann nicht direkt in Ordner schreiben – bitte Chrome/Edge nutzen oder das ZIP verwenden.", true);
@@ -789,7 +820,8 @@ window.EQE = window.EQE || {};
     const traders = byKind("trader");
     const traderChanged = traders.length > 0 && traders.some(isChanged);
     const dels = pendingDeletes();
-    if (!changed.length && !traderChanged && !dels.length) {
+    const extraChanged = extras.some((x) => x.changedCount() > 0);
+    if (!changed.length && !traderChanged && !dels.length && !extraChanged) {
       EQE.toast("Nichts zu speichern – es gibt keine Änderungen.", true);
       return null;
     }
@@ -806,13 +838,13 @@ window.EQE = window.EQE || {};
         return null; // abgebrochen
       }
     }
-    const firsts = items.filter((i) => i.path && i.path.indexOf("/") > -1).map((i) => i.path.split("/")[0]);
-    const rootName = firsts.length && firsts.every((f) => f === firsts[0]) ? firsts[0] : null;
+    const rootName = projectRootName(root);
     if (rootName && root.name !== rootName) {
       if (root !== rootHandle && !window.confirm('Du hast den Ordner "' + root.name + '" gewählt, hochgeladen wurde aber "' + rootName + '". Trotzdem dort speichern?')) return null;
     }
     const writes = changed.map((it) => ({ group: [it], path: targetPath(it), text: exportText(it) }));
     if (traderChanged) writes.push({ group: traders, path: targetPath(traders[0]), text: JSON.stringify({ Traders: traders.map((t) => t.json) }, null, 2) + "\n" });
+    extras.forEach((x) => x.fileWrites({ rootName: rootName }).forEach((w) => writes.push({ group: [], path: w.path, text: w.text, onDone: w.onDone })));
     const more = (n) => (n > 12 ? "\n… (+" + (n - 12) + ")" : "");
     const msg =
       writes.length + " Datei(en) schreiben, " + dels.length + " löschen in \"" + root.name + '":\n\n' +
@@ -846,6 +878,7 @@ window.EQE = window.EQE || {};
           it.dirty = false;
           it.path = w.path;
         });
+        if (w.onDone) w.onDone();
         okW++;
       } catch (e) {
         errors.push(w.path + ": " + (e && e.message));
@@ -894,7 +927,7 @@ window.EQE = window.EQE || {};
   async function walkHandle(dir, prefix, out) {
     for await (const [name, h] of dir.entries()) {
       if (h.kind === "directory") await walkHandle(h, prefix + name + "/", out);
-      else if (/\.json$/i.test(name)) {
+      else if (/\.json$/i.test(name) || /^config\.cpp$/i.test(name)) {
         try {
           out.push({ file: await h.getFile(), path: prefix + name });
         } catch (e) {
@@ -1008,7 +1041,10 @@ window.EQE = window.EQE || {};
     exportZip,
     downloadZip,
     exportPath,
-    changedCount: () => items.filter(isChanged).length + pendingDeletes().length,
+    changedCount: () => items.filter(isChanged).length + pendingDeletes().length + extras.reduce((n, x) => n + x.changedCount(), 0),
+    registerExtra: (x) => extras.push(x),
+    notify: () => emit({ type: "extra" }),
+    buildZip: buildZip,
     pendingDeletes,
     targetPath,
     canWriteFolder,

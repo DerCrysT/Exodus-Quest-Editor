@@ -396,3 +396,27 @@ input.invalid, select.invalid { border-color: var(--danger); }
 .prod-table input[type=text], .prod-table input[type=number] { padding: 4px 6px; font-size: 12px; }
 .prod-table input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent-dim); }
 .prod-editor .toolbar input[type=text] { max-width: 260px; }
+
+/* ---------------------------------------------------------------- Override-Tool */
+.ov2 { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1000px) { .ov2 { grid-template-columns: 1fr; } }
+.ov2-left { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ov2-filters { gap: 8px; }
+.ov2-listhead { display: flex; align-items: center; gap: 8px; padding: 2px 4px; }
+.ov2-list { display: flex; flex-direction: column; gap: 2px; max-height: calc(100vh - 360px); min-height: 260px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-panel); padding: 4px; }
+.ov2-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 3px; border: 1px solid transparent; }
+.ov2-row:hover { background: #151a12; }
+.ov2-row.current { background: var(--bg-card); border-color: var(--accent-dim); }
+.ov2-row.edited .mono { color: var(--accent); }
+.ov2-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent-dim); flex: 0 0 auto; }
+.ov2-name { flex: 1; min-width: 0; cursor: pointer; overflow: hidden; }
+.ov2-name .mono { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ov2-badge { font-size: 11px; color: var(--accent); white-space: nowrap; }
+.ov2-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 16px; color: var(--accent); }
+.ov2-right { min-width: 0; }
+.ov2-changed input, .ov2-changed select, .ov2-changed textarea, input.ov2-changed-input { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(217,163,89,0.35); }
+.ov2-reset { margin-left: auto; color: var(--accent); }
+.ov2-reset[hidden] { display: none; }
+.ov2-summary { display: flex; flex-direction: column; gap: 14px; }
+.ov2-summary .preview { max-height: 70vh; }
+.ov2-bulk .section { margin-bottom: 0; border-color: var(--accent-dim); }

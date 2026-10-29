@@ -47,6 +47,10 @@
       <button class="tab" data-tab="map"><span class="ico">⌖</span>Interaktive Karte</button>
     </div>
     <div class="nav-group">
+      <div class="nav-title">Config</div>
+      <button class="tab" data-tab="overrides"><span class="ico">⚙</span>Overrides</button>
+    </div>
+    <div class="nav-group">
       <div class="nav-title">Mehr</div>
       <button class="tab" data-tab="help"><span class="ico">?</span>Hilfe</button>
     </div>
@@ -64,6 +68,7 @@
   <section class="panel" id="panel-tcat"></section>
   <section class="panel" id="panel-bcat"></section>
   <section class="panel" id="panel-map"></section>
+  <section class="panel" id="panel-overrides"></section>
 
   <section class="panel" id="panel-help">
     <div class="help-page">
@@ -93,6 +98,12 @@
       <p>Die <em>Interaktive Karte</em> lädt immer die DayZone-Karte und zeigt NPCs, Trader, Quest-Ziele, Spawn-Gruppen und Stashes deines Projekts als
          Marker (Doppelklick öffnet den Eintrag im Editor). Liegen Zones-, Tiers-, Radiation- oder Anomalies-JSONs im Projektordner, werden sie
          automatisch in der Karte angezeigt.</p>
+      <h2>Overrides (config.cpp)</h2>
+      <p>Im Bereich <em>Config → Overrides</em> lädst du die <code>config.cpp</code>-Dateien deines Projektordners (oder wählst nur einen Ordner mit config.cpp). Das Tool sortiert alle Klassen vor
+         (Kleidung nach Slot, Essen &amp; Trinken, Waffen, Magazine, Munition …). Du klickst eine Klasse an und änderst Größe, Cargo, Schutz, Haltbarkeit, Nährwerte u.&nbsp;v.&nbsp;m. &mdash; per Zahlenfeld, Dropdown oder Häkchen.
+         Mit den Häkchen in der Liste kannst du mehrere Klassen markieren und Werte für alle auf einmal setzen oder umrechnen (z.&nbsp;B. Schutz ×&nbsp;0,8).</p>
+      <p>Gespeichert wird nur, was du geändert hast, in <code>Exodus_Overrides/Exodus_Overrides/config.cpp</code> (mit <code>$PBOPREFIX$.txt</code>) &mdash; der Ordner wird im Projektordner angelegt, falls er fehlt, sonst wird die vorhandene Datei weiterbearbeitet.
+         Texturen (paa/rvmat) werden bewusst ignoriert. Danach den Ordner <code>Exodus_Overrides/Exodus_Overrides</code> als PBO packen.</p>
       <h2>Hinweise</h2>
       <ul>
         <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
@@ -128,6 +139,7 @@
 
 <script src="js/common.js"></script>
 <script src="js/data.js"></script>
+<script src="js/cfgparse.js"></script>
 <script src="js/project.js"></script>
 <script src="js/shell.js"></script>
 <script src="js/quest.js"></script>
@@ -136,6 +148,7 @@
 <script src="js/stash.js"></script>
 <script src="js/trader.js"></script>
 <script src="js/maptab.js"></script>
+<script src="js/overrides.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>
