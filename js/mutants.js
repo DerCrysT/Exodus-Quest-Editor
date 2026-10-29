@@ -22,7 +22,8 @@
     sel: "", // Schlüssel der gewählten Variante
     tier: "1",
     search: "",
-    dmg: 50, // Annahme: Schaden pro Treffer
+    dmg: 50, // eigener Schaden pro Treffer (nur bei weapon = "custom")
+    weapon: "ar",
     f2: 1.4,
     f3: 2,
     scope: "fam",
@@ -72,8 +73,20 @@
   const fmt = (n, d) => K().fmt(n, d);
 
   // ---------------------------------------------------------------- Rechnung
-  function hitsTo(hp) {
-    return Number.isFinite(hp) && st.dmg > 0 ? Math.ceil(hp / st.dmg) : NaN;
+  // Leben-Schaden pro Schuss laut Vanilla-DayZ-Dateien (CfgAmmo > DamageApplied > Health > damage, aus den installierten DayZ-Dateien gelesen)
+  const WEAPONS = [
+    { k: "pistol", label: "Pistole", ex: "CZ75 · 9×19 mm", dmg: 40, note: "Bullet_9x19 = 40 (.45 ACP der FNX45 ebenfalls 40; .357 Magnum 65)" },
+    { k: "smg", label: "SMG", ex: "MP5-K · 9×19 mm", dmg: 40, note: "Bullet_9x19 = 40 je Kugel (UMP45 .45 ACP ebenfalls 40) – der Vorteil der SMG ist die Feuerrate, nicht der Schaden" },
+    { k: "shotgun", label: "Schrotflinte", ex: "Saiga/Izh-43 · 12er Schrot", dmg: 280, note: "Bullet_12GaugePellets: 8 Schrotkugeln × 35 = 280, aber nur bei Nähe/allen Treffern (Streuung!); Posten-Patrone (Slug) = 110" },
+    { k: "ar", label: "Sturmgewehr", ex: "M4A1 · 5,56×45 mm", dmg: 110, note: "Bullet_556x45 = 110 (AKM 7,62×39 = 110, AK-74 5,45×39 = 115, .308/7,62×54 = 150)" },
+  ];
+  function dmgOf(w) {
+    const x = WEAPONS.find((e) => e.k === (w || st.weapon));
+    return x ? x.dmg : st.dmg;
+  }
+  function hitsTo(hp, w) {
+    const d = dmgOf(w);
+    return Number.isFinite(hp) && d > 0 ? Math.ceil(hp / d) : NaN;
   }
 
   function renderOverview(box) {
@@ -97,11 +110,13 @@
   }
 
   function assumeBar(redraw) {
+    const custom = h("input", { type: "number", min: "1", step: "any", value: st.dmg, style: "max-width:110px", disabled: st.weapon !== "custom", oninput: (e) => (Number(e.target.value) > 0 && ((st.dmg = Number(e.target.value)), redraw())) });
     return h("div", { class: "toolbar mp-assume" }, [
       h("div", { class: "field" }, [
-        h("label", {}, ["Schaden pro Treffer", tipNode("Annahme für die Spalte „Treffer“: Wie viel Lebenspunkte-Schaden ein Schuss/Hieb anrichtet. Typische Größenordnung: Pistole 20–40, Sturmgewehr 40–60, Scharfschützengewehr 100+ (grobe Schätzung, hängt von Waffe, Munition und Trefferzone ab). Nur Anzeige.")]),
-        h("input", { type: "number", min: "1", step: "any", value: st.dmg, style: "max-width:110px", oninput: (e) => (Number(e.target.value) > 0 && ((st.dmg = Number(e.target.value)), redraw())) }),
+        h("label", {}, ["Waffentyp für „Treffer“", tipNode("Welche Waffe die Spalte „Treffer“ rechnet. Die Werte stammen aus den Vanilla-DayZ-Dateien (Leben-Schaden pro Kugel); Waffe und Munition sind stark vereinfacht auf den Waffentyp heruntergebrochen. Nicht eingerechnet: Trefferzone (Kopf/Körper), Entfernung, Rüstung der Mutanten und Mod-Waffen mit eigenen Werten. Nur Anzeige.")]),
+        h("select", { onchange: (e) => ((st.weapon = e.target.value), redraw && render()) }, WEAPONS.map((w) => h("option", { value: w.k, text: w.label + " (" + w.dmg + ")", selected: st.weapon === w.k })).concat([h("option", { value: "custom", text: "Eigener Wert", selected: st.weapon === "custom" })])),
       ]),
+      h("div", { class: "field" }, [h("label", {}, ["Eigener Schaden", tipNode("Nur aktiv bei „Eigener Wert“: Leben-Schaden pro Treffer, z. B. für eine Mod-Waffe.")]), custom]),
       h("span", { class: "muted small", text: "Annahme für die Live-Rechnung – wird nicht in die Datei geschrieben." }),
     ]);
   }
@@ -213,6 +228,14 @@
           tabs,
           h("div", { class: "mono muted small", text: node.name + (node.base ? " : " + node.base : "") }),
           grid,
+          h("h4", { text: "Treffer bis zum Tod je Waffentyp" }),
+          h("div", { class: "table-scroll" }, [
+            h("table", { class: "ptable prod-table" }, [
+              h("thead", {}, [h("tr", {}, ["Waffentyp", "Schaden/Schuss"].concat(TIERS.map((t) => "T" + t + " (" + fmt(hpOf(v, t), 0) + " HP)"), ["Quelle (Vanilla)"]).map((t) => h("th", { text: t })))]),
+              h("tbody", {}, WEAPONS.map((w) => h("tr", {}, [h("td", { text: w.label + " – " + w.ex }), h("td", { text: String(w.dmg) })].concat(TIERS.map((t) => h("td", { text: v.tiers[t] ? fmt(hitsTo(hpOf(v, t), w.k), 0) + " Schuss" : "–" })), [h("td", { class: "small muted", text: w.note })])))),
+            ]),
+          ]),
+          h("div", { class: "help", text: "Schuss = ein Treffer mit voller Wirkung auf den Mutanten (ohne Trefferzonen-Faktor, ohne Rüstung). Bei der Schrotflinte zählen alle 8 Schrotkugeln." }),
           h("h4", { text: "Beute beim Ausnehmen" }),
           sk ? null : h("div", { class: "muted small", text: "Diese Variante definiert keine Beute (erbt sie von der Originalklasse)." }),
           inherited
