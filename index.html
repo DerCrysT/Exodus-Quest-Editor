@@ -47,6 +47,10 @@
       <button class="tab" data-tab="map"><span class="ico">⌖</span>Interaktive Karte</button>
     </div>
     <div class="nav-group">
+      <div class="nav-title">Medizin</div>
+      <button class="tab" data-tab="medplus"><span class="ico">✚</span>MedPlus</button>
+    </div>
+    <div class="nav-group">
       <div class="nav-title">Config</div>
       <button class="tab" data-tab="overrides"><span class="ico">⚙</span>Overrides</button>
     </div>
@@ -69,6 +73,7 @@
   <section class="panel" id="panel-bcat"></section>
   <section class="panel" id="panel-map"></section>
   <section class="panel" id="panel-overrides"></section>
+  <section class="panel" id="panel-medplus"></section>
 
   <section class="panel" id="panel-help">
     <div class="help-page">
@@ -104,6 +109,10 @@
          Mit den Häkchen in der Liste kannst du mehrere Klassen markieren und Werte für alle auf einmal setzen oder umrechnen (z.&nbsp;B. Schutz ×&nbsp;0,8).</p>
       <p>Gespeichert wird nur, was du geändert hast, in <code>Exodus_Overrides/Exodus_Overrides/config.cpp</code> (mit <code>$PBOPREFIX$.txt</code>) &mdash; der Ordner wird im Projektordner angelegt, falls er fehlt, sonst wird die vorhandene Datei weiterbearbeitet.
          Texturen (paa/rvmat) werden bewusst ignoriert. Danach den Ordner <code>Exodus_Overrides/Exodus_Overrides</code> als PBO packen.</p>
+      <h2>MedPlus</h2>
+      <p>Im Bereich <em>Medizin &rarr; MedPlus</em> bearbeitest du die JSON-Dateien des Medizin-Mods MedPlus. Lade den MedPlus-Ordner (Knopf oben im Tab). Links wählst du ein Thema (z.&nbsp;B. Gehirnerschütterung, Schusswunden, Betrunkenheit),
+         rechts stehen die Werte mit <span class="tip">?</span>-Erklärung und eine <strong>Live-Berechnung</strong>, die sich bei jeder Änderung aktualisiert (etwa: wie schnell man verblutet, wie viel eine Suppe über ihre Dauer heilt).
+         Die Tabellen (Zombies, Tiere, Klingen, Munition, Getränke) lassen sich durchsuchen, ergänzen und duplizieren. „Änderungen speichern“ schreibt die Dateien zurück.</p>
       <h2>Hinweise</h2>
       <ul>
         <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
@@ -150,6 +159,9 @@
 <script src="js/trader.js"></script>
 <script src="js/maptab.js"></script>
 <script src="js/overrides.js"></script>
+<script src="js/medplus-data.js"></script>
+<script src="js/medplus-text.js"></script>
+<script src="js/medplus.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>

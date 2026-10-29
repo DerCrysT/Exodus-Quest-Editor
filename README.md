@@ -45,6 +45,12 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
     Gespeichert wird **nur Geändertes** in `Exodus_Overrides/Exodus_Overrides/config.cpp` (+ `$PBOPREFIX$.txt`), im Projektordner neu angelegt oder – falls schon vorhanden – weiterbearbeitet.
     `requiredAddons` werden aus den CfgPatches der betroffenen Configs ermittelt. Texturen (paa/rvmat) werden ignoriert. Basisklassen aus Vanilla werden aufgelöst, wenn ihre Config mitgeladen wird – z. B. die Vanilla-PBOs aus `DayZServer/addons` (characters_*.pbo, gear_*.pbo, …). Config-Namen werden ohne Beachtung der Groß-/Kleinschreibung behandelt.
 
+11. **MedPlus (Medizin-Mod):** Bereich *Medizin → MedPlus*. Lädt den MedPlus-Ordner (`MedPlusTrim.json`, `ZombieDamageTrim.json`, `AnimalDamageTrim.json`, `BladeDamageTrim.json`,
+    `WeaponDamageTrim.json`, `EdibleForMSA.json`, `MedPlusEdibleSoupTrim.json`). Alle ~650 Werte sind nach Themen sortiert (Verletzungen, Körper, Psyche, Medikamente, Suppen), mit „?“-Erklärung
+    und **Live-Berechnung** je Abschnitt (z. B. Verbluten in Minuten, Wirkung über die Dauer, Alkohol-Menge bis Betrunken, Zeit bis Herzinfarkt) sowie Plausibilitätsprüfungen
+    (doppelte Einträge, ungleich lange Listen, Summe Stecken+Durchschuss ≠ 100 %). Änderungen werden wie bei Dialogen/Tradern per „Änderungen speichern“ in die JSON-Dateien zurückgeschrieben
+    (Originalformat: 4 Leerzeichen, Kommazahlen mit `.0`). Die Erklärungen sind aus den Wertenamen abgeleitet.
+
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
 Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).
 
@@ -84,6 +90,7 @@ js/trader.js          Trader-, Handels- und Tauschkategorie-Editoren
 js/cfgparse.js        config.cpp-Parser, Klassen-Register, Vererbung, Kategorisierung
 js/cfgbin.js          config.bin (rapified) und PBO-Archive lesen
 js/overrides.js       Override-Tool (Klassen bearbeiten, Config erzeugen)
+js/medplus*.js        MedPlus-Editor (Daten, Texte/Erklärungen, Oberfläche, Live-Berechnung)
 js/maptab.js          Karten-Tab (iframe, Marker/Daten aus dem Projekt)
 map/                  Gebaute interaktive Karte inkl. DayZone_Map.webp
 js/overview.js        Projekt-Tab (Laden, Liste, Prüfung, Export) und NPC-Übersicht

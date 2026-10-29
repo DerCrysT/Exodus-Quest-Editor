@@ -13,14 +13,15 @@ window.EQE = window.EQE || {};
 
   // Bearbeitbar: quest, npc, dialog, stash, trader, tcat (Handelskategorie), bcat (Tauschkategorie).
   // Nur Anzeige/Durchreichen: zones, tiers, radiation, anomalies (Karte) und tsettings (Trader-Hauptsettings).
-  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"];
+  const MP_KINDS = ["medplus", "mp_zombie", "mp_animal", "mp_blade", "mp_weapon", "mp_liquid", "mp_soup", "mp_fear"];
+  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS);
   const ID_KEY = { quest: "QuestId", npc: "NpcId", dialog: "DialogId", stash: "StashId", trader: "trader_id" };
   // Dateien ohne ID im JSON: die ID ist der Dateiname (ohne .json) – bei Kategorien so von den Tradern referenziert
-  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"];
+  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS);
   const NAME_KEY = { quest: "Title", npc: "Name", dialog: "Title", stash: "Mode", trader: "trader_name", tcat: "name_category", bcat: "name_category" };
-  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map" };
+  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus" };
   const FOLDER_MARKER = { tcat: "trader_category_list", bcat: "barter_category_list" };
-  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings" };
+  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen" };
   const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
@@ -89,6 +90,14 @@ window.EQE = window.EQE || {};
       return null;
     }
     if (!j || typeof j !== "object") return null;
+    // MedPlus (Medizin-Mod): Config und Tabellen-Dateien
+    if (Array.isArray(j.ZombieDamageAll)) return "mp_zombie";
+    if (Array.isArray(j.AnimalDamageAll)) return "mp_animal";
+    if (Array.isArray(j.BladeDamageAll)) return "mp_blade";
+    if (Array.isArray(j.WeaponDamageAll)) return "mp_weapon";
+    if (Array.isArray(j.EdibleAll)) return "mp_liquid";
+    if (Array.isArray(j.FearZoneAll)) return "mp_fear";
+    if (j.MP_ConfigVersion !== undefined) return Array.isArray(j.Meat) || Array.isArray(j.Vegetables) ? "mp_soup" : "medplus";
     if (typeof j.DialogId === "string" && Array.isArray(j.Nodes)) return "dialog";
     if (typeof j.QuestId === "string" && (Array.isArray(j.Objectives) || j.QuestType !== undefined)) return "quest";
     if (typeof j.StashId === "string") return "stash";
@@ -744,8 +753,10 @@ window.EQE = window.EQE || {};
     return out;
   }
 
+  const serializers = {};
   function exportText(item) {
     if (!isChanged(item) && item.rawText) return item.rawText;
+    if (serializers[item.kind]) return serializers[item.kind](item);
     return JSON.stringify(item.json, null, 2) + "\n";
   }
 
@@ -1042,6 +1053,8 @@ window.EQE = window.EQE || {};
     exportPath,
     changedCount: () => items.filter(isChanged).length + pendingDeletes().length + extras.reduce((n, x) => n + x.changedCount(), 0),
     registerExtra: (x) => extras.push(x),
+    registerSerializer: (kinds, fn) => kinds.forEach((k) => (serializers[k] = fn)),
+    MP_KINDS: MP_KINDS,
     notify: () => emit({ type: "extra" }),
     buildZip: buildZip,
     pendingDeletes,

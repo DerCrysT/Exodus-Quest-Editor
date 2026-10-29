@@ -26,6 +26,11 @@
     const item = EQE.Project.get(uid);
     if (!item) return;
     if (!EQE.editors[item.kind]) {
+      if (EQE.Project.MP_KINDS.indexOf(item.kind) > -1) {
+        switchTab("medplus");
+        if (EQE.MedPlus) EQE.MedPlus.openItem(uid);
+        return;
+      }
       switchTab(EQE.Project.MAP_KINDS.indexOf(item.kind) > -1 ? "map" : "project");
       return;
     }
@@ -41,6 +46,8 @@
     refreshers.map = mapTab.refresh;
     const overrides = EQE.Overrides.init(document.getElementById("panel-overrides"));
     refreshers.overrides = overrides.refresh;
+    const medplus = EQE.MedPlus.init(document.getElementById("panel-medplus"));
+    refreshers.medplus = medplus.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
     refreshers.project = project.refresh;
     refreshers.overview = overview.refresh;
