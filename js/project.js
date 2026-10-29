@@ -538,6 +538,14 @@ window.EQE = window.EQE || {};
     const result = { counts, replaced: 0, unknown: [], errors: [], configs: 0 };
     for (const e of entries) {
       const name = e.path || e.file.name;
+      if (EQE.GasMask && /(^|\/)Exodus_GM\/(.*\/)?Scripts\/.*\.c$/i.test(name)) {
+        try {
+          EQE.GasMask.ingestLooseScript(name, await e.file.text());
+        } catch (err) {
+          result.errors.push(name + " (" + err.message + ")");
+        }
+        continue;
+      }
       if (EQE.CfgBin && EQE.CfgBin.isConfigSource(name)) {
         try {
           result.configs += await EQE.CfgBin.ingestFile(e.file, name);
@@ -576,6 +584,7 @@ window.EQE = window.EQE || {};
     if (result.configs && EQE.Cfg) {
       EQE.Cfg.rebuild();
       if (EQE.Overrides) EQE.Overrides.afterIngest();
+      if (EQE.GasMask) EQE.GasMask.afterIngest();
     }
     return result;
   }
@@ -945,7 +954,7 @@ window.EQE = window.EQE || {};
   async function walkHandle(dir, prefix, out) {
     for await (const [name, h] of dir.entries()) {
       if (h.kind === "directory") await walkHandle(h, prefix + name + "/", out);
-      else if (/\.json$/i.test(name) || /^config\.(cpp|bin)$/i.test(name) || /\.pbo$/i.test(name)) {
+      else if (/\.json$/i.test(name) || /^config\.(cpp|bin)$/i.test(name) || /\.pbo$/i.test(name) || /\.c$/i.test(name)) {
         try {
           out.push({ file: await h.getFile(), path: prefix + name });
         } catch (e) {

@@ -55,6 +55,11 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
     `RadiationZones.json` und `WreckZones.json` (Liste + Detail, Live-Wirkung je Zone), `RadClothProtection.json` und `FilterProtection.json` (Tabellen mit Doppelt-Prüfung). Dazu eine Zonen-Übersicht nach Gefahr, „?“-Erklärungen mit Zitat aus der Mod-Doku und Live-Berechnungen
     (Zeit bis Stufe 1 bis kritisch, Tod, Blutverlust, Überdosis bei geladenem MedPlus). Geschrieben wird im Originalformat.
 
+13. **Gasmasken (Exodus_GM):** Bereich *Medizin → Gasmasken*. Liest die `Exodus_GM.pbo` (config.cpp + Skripte; auch über „Ordner laden“, z. B. den Addons-Ordner des Packs) oder einen vorhandenen Exodus_GM-Quellordner.
+    Masken und Filter bearbeiten (Name, Beschreibung, Gewicht, Größe, Filterkapazität, Slots, Haltbarkeit …), neue Klassen anlegen/duplizieren, **Slot-Locks** (welche Slots eine Maske sperrt) und die **Filter-Erkennung** für den Radiation-Mod verwalten sowie CfgSlots ergänzen.
+    Mit geladener Radiation-Config zeigt jede Klasse ihren Schutz (mSv), die Laufzeit in Zonen und gegen wie viele Zonen sie komplett schützt; fehlende Schutz-Einträge werden markiert.
+    Gespeichert wird der Ordner `Exodus_GM/Exodus_GM/` (`config.cpp`, `Scripts/4_World/…`, `$PBOPREFIX$.txt`) im Projektordner – neu angelegt, falls er fehlt –, den du danach selbst als PBO packst. Die Skripte werden aus den Slot-Lock-Einstellungen erzeugt.
+
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
 Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).
 
@@ -96,6 +101,7 @@ js/cfgbin.js          config.bin (rapified) und PBO-Archive lesen
 js/overrides.js       Override-Tool (Klassen bearbeiten, Config erzeugen)
 js/medplus*.js        MedPlus-Editor (Daten, Texte/Erklärungen, Oberfläche, Live-Berechnung)
 js/radiation*.js      Radiation-Editor (nutzt die Bausteine aus medplus.js)
+js/gasmask.js         Gasmasken-Editor (Exodus_GM: Config, Slot-Locks, Skript-Erzeugung)
 js/maptab.js          Karten-Tab (iframe, Marker/Daten aus dem Projekt)
 map/                  Gebaute interaktive Karte inkl. DayZone_Map.webp
 js/overview.js        Projekt-Tab (Laden, Liste, Prüfung, Export) und NPC-Übersicht

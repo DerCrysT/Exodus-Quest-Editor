@@ -189,6 +189,7 @@ window.EQE = window.EQE || {};
       return s;
     };
     const entries = [];
+    const props = {};
     for (;;) {
       const name = cstr();
       need(20);
@@ -201,7 +202,7 @@ window.EQE = window.EQE || {};
           for (;;) {
             const key = cstr();
             if (key === "") break;
-            cstr();
+            props[key] = cstr();
           }
           continue;
         }
@@ -214,21 +215,28 @@ window.EQE = window.EQE || {};
       e.offset = offset;
       offset += e.size;
     });
+    entries.props = props;
     return entries;
   }
 
-  /** Alle config.bin/config.cpp eines PBO (nur diese Einträge werden gelesen). */
-  async function readPbo(file) {
+  /** Liest die Einträge eines PBO, für die matcher(name, props) true liefert. Rückgabe: {files:[{name,buffer}], props} */
+  async function readPboFiles(file, matcher) {
     const entries = await readPboHeader(file);
-    const out = [];
+    const files = [];
     for (const e of entries) {
-      if (!/(^|[\\/])config\.(bin|cpp)$/i.test(e.name)) continue;
+      if (!matcher(e.name, entries.props)) continue;
       let data = await readSlice(file, e.offset, e.offset + e.size);
       if (e.method === METHOD_CPRS) data = lzssDecompress(data, e.orig);
       else if (e.method !== 0) continue; // unbekannte Packmethode
-      out.push({ name: e.name.replace(/\\/g, "/"), buffer: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) });
+      files.push({ name: e.name.replace(/\\/g, "/"), buffer: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) });
     }
-    return out;
+    return { files: files, props: entries.props || {} };
+  }
+
+  const CONFIG_RE = /(^|[\\/])config\.(bin|cpp)$/i;
+  /** Alle config.bin/config.cpp eines PBO (nur diese Einträge werden gelesen). */
+  async function readPbo(file) {
+    return (await readPboFiles(file, (n) => CONFIG_RE.test(n))).files;
   }
 
   /** Ist der Pfad eine Config-Quelle (config.cpp, config.bin oder PBO)? */
@@ -245,15 +253,25 @@ window.EQE = window.EQE || {};
   async function ingestFile(file, path) {
     if (/\.pbo$/i.test(path)) {
       let n = 0;
-      for (const e of await readPbo(file)) {
+      // Exodus_GM (Gasmasken-Mod): zusätzlich die Skripte lesen, damit der Gasmasken-Editor sie bearbeiten kann
+      const r = await readPboFiles(file, (name, props) => CONFIG_RE.test(name) || (props && props.prefix === "Exodus_GM" && /\.c$/i.test(name)));
+      const text = new TextDecoder("utf-8");
+      const gm = { path: path, config: "", scripts: {} };
+      for (const e of r.files) {
+        if (/\.c$/i.test(e.name)) {
+          gm.scripts[e.name] = text.decode(e.buffer);
+          continue;
+        }
         ingestBuffer(e.name, e.buffer, path + "/" + e.name);
         n++;
+        if (r.props.prefix === "Exodus_GM" && /\.cpp$/i.test(e.name)) gm.config = text.decode(e.buffer);
       }
+      if (r.props.prefix === "Exodus_GM" && gm.config && EQE.GasMask) EQE.GasMask.ingestSources(gm);
       return n;
     }
     ingestBuffer(path, await file.arrayBuffer(), path);
     return 1;
   }
 
-  EQE.CfgBin = { parseRap: parseRap, readPbo: readPbo, readPboHeader: readPboHeader, isConfigSource: isConfigSource, ingestFile: ingestFile };
+  EQE.CfgBin = { parseRap: parseRap, readPbo: readPbo, readPboFiles: readPboFiles, readPboHeader: readPboHeader, isConfigSource: isConfigSource, ingestFile: ingestFile };
 })(window.EQE);

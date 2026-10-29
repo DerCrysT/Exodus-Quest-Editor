@@ -55,6 +55,8 @@
     refreshers.medplus = medplus.refresh;
     const radiation = EQE.Radiation.init(document.getElementById("panel-radiation"));
     refreshers.radiation = radiation.refresh;
+    const gasmask = EQE.GasMask.init(document.getElementById("panel-gasmask"));
+    refreshers.gasmask = gasmask.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
     refreshers.project = project.refresh;
     refreshers.overview = overview.refresh;

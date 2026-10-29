@@ -50,6 +50,7 @@
       <div class="nav-title">Medizin</div>
       <button class="tab" data-tab="medplus"><span class="ico">✚</span>MedPlus</button>
       <button class="tab" data-tab="radiation"><span class="ico">☢</span>Radiation</button>
+      <button class="tab" data-tab="gasmask"><span class="ico">◍</span>Gasmasken</button>
     </div>
     <div class="nav-group">
       <div class="nav-title">Config</div>
@@ -76,6 +77,7 @@
   <section class="panel" id="panel-overrides"></section>
   <section class="panel" id="panel-medplus"></section>
   <section class="panel" id="panel-radiation"></section>
+  <section class="panel" id="panel-gasmask"></section>
 
   <section class="panel" id="panel-help">
     <div class="help-page">
@@ -119,6 +121,9 @@
       <p>Im Bereich <em>Medizin &rarr; Radiation</em> bearbeitest du die JSON-Dateien des Radiation-Mods: Strahlenkrankheit, Schutz und Heilung, Bombardement (inklusive der drei Panel-Bomben) sowie die Tabellen mit
          Strahlungszonen, Wrack-Zonen, Schutz-Ausrüstung und Filtern. Wie bei MedPlus gibt es „?“-Erklärungen (mit Zitat aus der Mod-Doku) und Live-Berechnungen &mdash; z.&nbsp;B. nach wie vielen Sekunden man in einer Zone Stufe 1 bzw. den kritischen Wert erreicht.
          Die „Zonen-Übersicht“ listet alle Zonen nach Gefahr. „Änderungen speichern“ schreibt die Dateien zurück.</p>
+      <h2>Gasmasken (Exodus_GM)</h2>
+      <p>Im Bereich <em>Medizin &rarr; Gasmasken</em> lädst du die <code>Exodus_GM.pbo</code> (oder einen Ordner, der sie enthält) und passt Masken und Filter an oder legst neue an. Unter „Slot-Locks“ bestimmst du, welche Slots eine Maske sperrt
+         (gegen Clipping/Spielvorteile) und welche Filter-Slots der Radiation-Mod erkennt. Gespeichert wird der Mod-Ordner <code>Exodus_GM</code> mit <code>config.cpp</code> und den Skripten &mdash; den innersten Ordner danach als PBO packen.</p>
       <h2>Hinweise</h2>
       <ul>
         <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
@@ -173,6 +178,7 @@
 <script src="js/radiation-doc.js"></script>
 <script src="js/radiation-text.js"></script>
 <script src="js/radiation.js"></script>
+<script src="js/gasmask.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>
