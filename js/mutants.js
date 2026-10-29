@@ -200,7 +200,8 @@
               h("td", {}, [h("input", { type: "text", value: C().getStr(c, "item"), oninput: (e) => (C().setRaw(c, "item", C().quote(e.target.value)), touch()), disabled: inherited })]),
               h("td", {}, [h("input", { type: "number", step: "1", min: "0", value: Number.isFinite(cnt) ? cnt : "", style: "width:70px", disabled: inherited, oninput: (e) => (e.target.value !== "" && (C().setNum(c, "count", Math.round(Number(e.target.value))), touch())) })]),
               h("td", {}, [h("input", { type: "text", value: mm ? mm.join(", ") : "", style: "width:100px", placeholder: "min, max", disabled: inherited || !mm, oninput: (e) => (C().setArr(c, "quantityMinMaxCoef", e.target.value.split(",").map((x) => x.trim()).filter((x) => x !== "")), touch()) })]),
-              h("td", { class: "small muted", text: Number.isFinite(avg) && Number.isFinite(cnt) ? "Ø " + fmt(cnt * avg, 2) + " Einheiten gesamt" : "" }),
+              h("td", { class: "small muted", text: cnt === 0 ? "entfernt (Anzahl 0)" : Number.isFinite(avg) && Number.isFinite(cnt) ? "Ø " + fmt(cnt * avg, 2) + " Einheiten gesamt" : "" }),
+              h("td", {}, [h("button", { class: "btn icon small", type: "button", text: "✕", disabled: inherited, title: "Entfernen: setzt die Anzahl auf 0, der Mutant liefert dieses Teil nicht mehr (die Klasse bleibt, damit nichts aus der Basisklasse durchkommt)", onclick: () => (C().setNum(c, "count", 0), touch(), render()) })]),
             ])
           );
         });
@@ -214,8 +215,17 @@
           grid,
           h("h4", { text: "Beute beim Ausnehmen" }),
           sk ? null : h("div", { class: "muted small", text: "Diese Variante definiert keine Beute (erbt sie von der Originalklasse)." }),
-          inherited ? h("div", { class: "issue ok", text: "Die Beute dieser Stufe wird von T1 geerbt – zum Ändern oben „Stufe T1“ wählen." }) : null,
-          sk ? h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Teil", "Gegenstand", "Anzahl", "Menge min/max (Faktor)", "Erwartung"].map((t) => h("th", { text: t })))]), sBody])]) : null,
+          inherited
+            ? h("div", { class: "issue ok" }, [
+                "Die Beute dieser Stufe wird von T1 geerbt. Um sie nur für T" + st.tier + " zu ändern, muss der Skinning-Block in die Config dieser Stufe geschrieben werden: ",
+                h("button", { class: "btn small", type: "button", text: "Eigenen Beute-Block für T" + st.tier + " anlegen (Kopie von T1)", onclick: () => ((node.children = node.children.filter((c) => c.name.toLowerCase() !== "skinning").concat([JSON.parse(JSON.stringify(sk))])), touch(), render()) }),
+              ])
+            : null,
+          !inherited && sk && st.tier !== "1" && t1 && C().find(t1, "Skinning")
+            ? h("div", { class: "toolbar" }, [h("button", { class: "btn small", type: "button", text: "Eigenen Block entfernen (wieder von T1 erben)", onclick: () => ((node.children = node.children.filter((c) => c.name.toLowerCase() !== "skinning")), touch(), render()) })])
+            : null,
+          sk ? h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Teil", "Gegenstand", "Anzahl", "Menge min/max (Faktor)", "Erwartung", ""].map((t) => h("th", { text: t })))]), sBody])]) : null,
+          sk && !inherited ? h("div", { class: "help", text: "Entfernen setzt die Anzahl auf 0. Bei Stufen mit eigenem Block gilt das nur für diese Stufe – Teile, die der Block nicht aufführt, kommen weiterhin von der Basisklasse (T1)." }) : null,
         ]),
       ])
     );
