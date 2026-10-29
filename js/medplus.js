@@ -146,6 +146,25 @@
   }
   const nTxt = (n) => (n === Infinity ? "nie" : String(n));
 
+  const HP_MAX = 100; // Spieler-Leben (DayZ-Standard)
+
+  /** Zeile "Tod nach": Lebensverlust pro Sekunde -> Zeit von 100 HP bis 0 (ohne Regeneration/Heilung). */
+  function deathRow(out, label, perSec, note) {
+    if (!(perSec > 0)) {
+      out.push(row(label, "kein Lebensverlust", "Wert ist 0"));
+      return;
+    }
+    out.push(row(label, "Tod nach " + fmtTime(HP_MAX / perSec), fmt(perSec * 60, 2) + " HP pro Minute" + (note ? " · " + note : "")));
+  }
+  /** Zeile "Anwendungen bis Tod" für einmalige Lebensverluste. */
+  function hitsRow(out, label, perHit, note) {
+    if (!(perHit > 0)) {
+      out.push(row(label, "kein Lebensverlust", "Wert ist 0"));
+      return;
+    }
+    out.push(row(label, Math.ceil(HP_MAX / perHit) + "× bis Tod", fmt(perHit) + " HP je Mal" + (note ? " · " + note : "")));
+  }
+
   /** Überdosis-Wirkstoff je Dosis aller Medikamente samt Schwellen. */
   function odData(c, only) {
     const tick = num(c, "OverdoseTickTime");
@@ -190,6 +209,20 @@
       const dz = (n) => n + (n === 1 ? " Dosis" : " Dosen");
       out.push(row(m.label, "Malus ab " + dz(s1), "Erbrechen ab " + dz(s2) + ", Maximum bei " + dz(s3) + " (alle auf einmal) · bei Einnahme alle " + fmtTime(od.interval) + ": Malus " + (i1 === Infinity ? "nie (der Abbau ist schneller als eine Dosis)" : "ab " + dz(i1))));
     });
+    // Lebensverlust ab der Malus-Schwelle und wann er tödlich wird (100 HP, ohne Regeneration)
+    const hpRate = num(c, "OverdoseHealthLossPerTick") / tick;
+    if (hpRate > 0) {
+      out.push(head("Lebensverlust durch Überdosis und Tod (" + HP_MAX + " HP, ohne Regeneration)"));
+      deathRow(out, "Dauerhaft über der Malus-Schwelle", hpRate, fmt(num(c, "OverdoseHealthLossPerTick")) + " HP je Takt à " + fmt(tick) + " s");
+      const lethalAgent = T1 + (HP_MAX * die) / hpRate;
+      out.push(row("Tödlicher Wirkstoffwert", lethalAgent <= T3 ? "ab " + fmt(lethalAgent, 0) : "nie erreichbar", "Malus " + fmt(T1, 0) + " + Abbauzeit bis 100 HP verbraucht; das Maximum ist " + fmt(T3, 0)));
+      meds.forEach((m) => {
+        const peak = Math.min(m.dose, T3);
+        const lost = (Math.max(0, peak - T1) / die) * hpRate;
+        const nLethal = lethalAgent <= T3 ? Math.ceil(lethalAgent / m.dose) : Infinity;
+        out.push(row(m.label, "1 Dosis: −" + fmt(lost, 1) + " HP", (lost >= HP_MAX ? "TÖDLICH" : "überlebbar") + " · tödlich ab " + (nLethal === Infinity ? "nie" : nLethal + (nLethal === 1 ? " Dosis" : " Dosen")) + " (alle auf einmal)"));
+      });
+    }
     if (!only && meds.length > 1) {
       const total = meds.reduce((a, m) => a + m.dose, 0);
       out.push(head("Alles gleichzeitig (je 1 Dosis von jedem)"));
@@ -257,6 +290,8 @@
       const v = num(c, k);
       out.push(row(l, fmt(v), "pro Zug · pro 10 Züge: " + fmt(v * 10, 1)));
     });
+    const hpKey = Object.keys(c).find((k) => k === (sec === "Sigaretta" ? "SigarettaHealthLostPerCircle" : ""));
+    if (hpKey) hitsRow(out, "Lebensverlust durch Züge", num(c, hpKey), "ohne Regeneration");
     if (p.od) {
       const od0 = odData(c, "");
       const perPuff = num(c, p.od);
@@ -327,6 +362,8 @@
     },
     KnifeWound(c, out) {
       bleedRows(out, "Blutverlust durch Messerwunden", num(c, "KnifeBloodDrainedPerTickPerWound"), num(c, "KnifeModifierBleedTickTime"), num(c, "KnifeStopBleedTimeSimpleCure"));
+      out.push(head("Lebensverlust durch Behandlung"));
+      hitsRow(out, "Ausbrennen mit der Fackel", num(c, "KnifeStitchWithTorchHPDepletion"), "je Wunde");
       if (c.KnifeEnableAutoClose === 1) out.push(row("Selbstschluss nach", fmtTime(num(c, "KnifeWoundTimerAutoClose")), fmt(num(c, "KnifeAutoCloseWInfectionChance"), 0) + " % Infektionsrisiko"));
     },
     BulletDMG(c, out) {
@@ -353,12 +390,17 @@
       out.push(row("Dauer", fmtTime(lt), ticks + " Takte"));
       out.push(row("Lebensverlust gesamt", fmt(num(c, "EmatomaHealthDrainedPerTick") * ticks, 1), fmt(num(c, "EmatomaHealthDrainedPerTick")) + " × " + ticks));
       out.push(row("Rennen gesperrt ab", fmt(num(c, "EmatomaNoRunCount"), 0) + " Blutergüssen", ""));
+      out.push(head("Tod durch Blutergüsse"));
+      deathRow(out, "Ab " + fmt(num(c, "EmatomaThresholdActivation"), 0) + " Blutergüssen", num(c, "EmatomaHealthDrainedPerTick") / tt, "bleibt der Lebensverlust bestehen, solange die Schwelle überschritten ist");
       const a = c.clothProtectionHematoma || [];
       const p = c.percentageProtectionHematoma || [];
       if (a.length !== p.length) out.push(warn("Kleidungs-Liste (" + a.length + ") und Schutz-Liste (" + p.length + ") sind nicht gleich lang."));
     },
     HeartAttack(c, out) {
       const tt = num(c, "HATickTime");
+      out.push(head("Lebensverlust und Tod"));
+      if (num(c, "HAHalveOrSubtractHP") === 1) out.push(row("Herzinfarkt", "−50 % der aktuellen HP", "ein Infarkt ist bei vollem Leben nie sofort tödlich; bei " + fmt(num(c, "HAHealthDepletedFaint"), 0) + " HP bleiben je 50 %"));
+      hitsRow(out, "Ohnmacht (HAHealthDepletedFaint)", num(c, "HAHealthDepletedFaint"), "laut Doku wird der Betrag abgezogen, wenn Halbieren aus ist");
       out.push(head("Erwartete Zeit bis zum Ereignis (Dauerbelastung)"));
       [["HAChanceWithOverweightPerTick", "Herzinfarkt bei Übergewicht"], ["HAChanceWithFearPerTick", "Herzinfarkt bei Angst"], ["HAChanceWithElectricPerTick", "Herzinfarkt bei Strom"], ["HAChanceToFaintPerTick", "Ohnmacht"]].forEach(([k, l]) => {
         const p = num(c, k) / 100;
@@ -504,6 +546,8 @@
       out.push(row("Sauberkeit hält", fmtTime(num(c, "IgieneDuration")), fmt(num(c, "IgieneDuration") / 3600, 1) + " Stunden"));
       out.push(row("Hot-Water ab", fmt(num(c, "IgieneMinTempToBeConsideredHotWater"), 0) + " °C", "Verbrühung ab " + fmt(num(c, "IgieneMinHotTempToMakeDamage"), 0) + " °C"));
       out.push(row("Geruchs-Reichweite", fmt(num(c, "IgieneSniffRange"), 0) + " m", ""));
+      out.push(head("Lebensverlust"));
+      hitsRow(out, "Waschen mit heißem Wasser (Topf/Kessel)", num(c, "IgieneCleaningBottleBaseHotDMGCycle"), "je Waschzyklus ab " + fmt(num(c, "IgieneMinHotTempToMakeDamage"), 0) + " °C");
     },
     Mental(c, out) {
       const tt = num(c, "MentalTickTime");
@@ -514,6 +558,10 @@
       out.push(row("Spieler töten ≙ Zombies töten", fmt(kp / kz, 1) + " Zombies", fmt(kp, 0) + " ÷ " + fmt(kz, 0)));
       const ka = num(c, "MentalInsertByKillingAnimal");
       out.push(row("Tier töten ≙ Zombies töten", fmt(ka / kz, 1) + " Zombies", ""));
+      out.push(head("Lebensverlust und Tod"));
+      if (num(c, "MentalDeathTouchHalveOrSubOrShock") === 1) hitsRow(out, "Todesberührung (Phantom/Albtraum)", num(c, "MentalDeathTouchHPLost"), "Modus: Leben abziehen");
+      else out.push(row("Todesberührung", num(c, "MentalDeathTouchHalveOrSubOrShock") === 0 ? "halbiert das Leben" : "Schock statt Leben", "Modus " + fmt(num(c, "MentalDeathTouchHalveOrSubOrShock"), 0)));
+      hitsRow(out, "Kruzifix", num(c, "MentalPrayingCrucifixDamage"), "Schaden je Gebet");
       out.push(head("Schwellen (Mentalwert, ab dem das Ereignis auftritt)"));
       [["MentalLaughStatThreshold", "Lachen"], ["MentalPhantomStatThreshold", "Phantom-Schüsse"], ["MentalSuicideStatThreshold", "Selbstmord-Stufe 1"], ["MentalSuicideFinalStatThreshold", "Selbstmord final"], ["MentalNightmareLevelThreshold", "Albträume"]].forEach(([k, l]) => out.push(row(l, fmt(num(c, k), 0), "")));
     },
