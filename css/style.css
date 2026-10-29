@@ -444,3 +444,7 @@ input.invalid, select.invalid { border-color: var(--danger); }
 .mp-bad { color: var(--danger); font-size: 12px; white-space: nowrap; }
 .prod-table th .tip { margin-left: 4px; }
 @media (max-width: 1000px) { .mp-nav { position: static; max-height: none; } }
+
+/* ---------------------------------------------------------------- Tooltip-Fenster (frei schwebend) */
+.tip::after { display: none !important; }
+.eqe-tooltip { position: fixed; z-index: 400; max-width: min(420px, calc(100vw - 16px)); padding: 10px 12px; background: #0b0f0c; color: var(--text); border: 1px solid var(--accent-dim); border-radius: var(--radius); font-size: 12.5px; line-height: 1.5; white-space: pre-line; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }

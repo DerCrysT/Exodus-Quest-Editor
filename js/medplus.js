@@ -727,8 +727,103 @@
     }).slice(0, 5000);
   }
 
+  /** text: String oder Funktion (wird erst beim Anzeigen aufgerufen, damit aktuelle Werte einfließen). */
   function tipNode(text) {
-    return h("span", { class: "tip", "data-tip": text, tabindex: "0", text: "?" });
+    const n = h("span", typeof text === "function" ? { class: "tip", tabindex: "0", text: "?" } : { class: "tip", "data-tip": text, tabindex: "0", text: "?" });
+    if (typeof text === "function") n.__tip = text;
+    return n;
+  }
+
+  // ---------------------------------------------------------------- ausführliche Erklärung je Wert (mit aktuellen Zahlen)
+  function secTick(secKey) {
+    const sec = cat().bySec[secKey];
+    return sec ? sec.keys.map((x) => x[0]).find((k) => /TickTime$/i.test(k)) || "" : "";
+  }
+  function secLast(secKey) {
+    const sec = cat().bySec[secKey];
+    return sec ? sec.keys.map((x) => x[0]).find((k) => /(LastingTime|Lastingtime)$/i.test(k)) || "" : "";
+  }
+
+  /** Mehrzeiliger Erklärungstext: Kurzbeschreibung, Interpretation mit den aktuellen Werten, Vergleich mit Doku/geladenem Wert. */
+  function explain(item, secKey, key, info) {
+    const c = item.json;
+    const v = c[key];
+    const d = T().docOf(key);
+    const lines = [info.help];
+    const interp = [];
+    const tk = secTick(secKey);
+    const lk = secLast(secKey);
+    const tick = tk && typeof c[tk] === "number" ? c[tk] : NaN;
+    const last = lk && typeof c[lk] === "number" ? c[lk] : NaN;
+    const secTitle = T().titleOf(secKey);
+    if (typeof v === "number") {
+      if (isBoolKey(item, key)) {
+        interp.push(v === 1 ? "Aktuell AN." : "Aktuell AUS.");
+        interp.push("Ist der Schalter aus, bleibt „" + secTitle + "“ ohne Wirkung – die übrigen Werte des Abschnitts (Chancen, Mengen, Zeiten) werden dann vermutlich nicht mehr gebraucht.");
+      } else if (ENUMS[key]) {
+        const e = ENUMS[key].find((x) => x[0] === v);
+        interp.push("Aktuell: " + (e ? e[1] : String(v)) + ".");
+      } else if (/TickTime$/i.test(key) || key === tk) {
+        interp.push("Der Effekt wird alle " + fmt(v) + " s berechnet = " + fmt(60 / v, 1) + " Takte pro Minute.");
+        interp.push("Alle „…PerTick“-Werte dieses Abschnitts gelten pro Takt: Halbierst du den Takt, wird pro Sekunde doppelt so oft gerechnet – die Wirkung pro Sekunde verdoppelt sich, wenn du die Pro-Takt-Werte nicht mit halbierst. Unter „Tick-Zeiten (alle)“ kannst du das automatisch umrechnen lassen.");
+        if (Number.isFinite(last)) interp.push("Mit der Wirkdauer (" + fmtTime(last) + ") ergibt das " + Math.floor(last / v) + " Takte pro Anwendung.");
+      } else if (/(LastingTime|Lastingtime)$/i.test(key)) {
+        interp.push("Die Wirkung hält " + fmtTime(v) + ".");
+        if (Number.isFinite(tick) && tick > 0) interp.push("Bei einem Takt von " + fmt(tick) + " s sind das " + Math.floor(v / tick) + " Takte; jeder „…PerTick“-Wert wirkt entsprechend oft (z. B. ein Wert von 1 ergibt " + Math.floor(v / tick) + " über die gesamte Dauer).");
+      } else if (/Delay(Activation|Time)$/i.test(key)) {
+        interp.push("Die Wirkung beginnt " + fmtTime(v) + " nach der Einnahme" + (v === 0 ? " (sofort)." : "."));
+      } else if (/ChancePerTick$|ChanceToGetShockedIfCritPerTick$|WakeUpChancePerTick$|VomitChancePerTick$|FaintChancePerTick$/i.test(key) || (/Chance/i.test(key) && /per tick/i.test(d ? d.comment : ""))) {
+        const p = v / 100;
+        interp.push("Bei jedem Takt wird mit " + fmt(v, 2) + " % gewürfelt.");
+        if (p > 0 && Number.isFinite(tick)) {
+          interp.push("Im Schnitt tritt es nach " + fmtTime(tick / p) + " ein (alle " + fmt(tick) + " s ein Wurf). Innerhalb von 1 Minute: " + fmt((1 - Math.pow(1 - p, 60 / tick)) * 100, 1) + " %" + (Number.isFinite(last) ? ", während der Wirkdauer (" + fmtTime(last) + "): " + fmt((1 - Math.pow(1 - p, last / tick)) * 100, 1) + " %." : "."));
+        }
+      } else if (/Chance/i.test(key)) {
+        const p = v / 100;
+        interp.push("Bei jedem Auslöser tritt es mit " + fmt(v, 2) + " % ein.");
+        if (p > 0 && p < 1) interp.push("Im Schnitt nach " + fmt(1 / p, 1) + " Auslösern; bei 5 Auslösern mindestens einmal: " + fmt((1 - Math.pow(1 - p, 5)) * 100, 1) + " %.");
+        if (v >= 100) interp.push("Bei 100 % tritt es immer ein.");
+        if (v === 0) interp.push("Bei 0 % tritt es nie ein.");
+      } else if (/PerCircle$/i.test(key)) {
+        interp.push("Wirkt bei jedem Zug. Bei 10 Zügen: " + fmt(v * 10, 2) + ", bei 20 Zügen: " + fmt(v * 20, 2) + ".");
+      } else if (/PerTick/i.test(key) && !/Chance/i.test(key)) {
+        interp.push("Bei jedem Takt wirkt " + fmt(v, 3) + (Number.isFinite(tick) ? " – pro Sekunde " + fmt(v / tick, 3) + ", pro Minute " + fmt((v * 60) / tick, 2) + "." : "."));
+        if (Number.isFinite(tick) && Number.isFinite(last)) interp.push("Über die gesamte Wirkdauer (" + fmtTime(last) + "): " + fmt(v * Math.floor(last / tick), 2) + ".");
+      } else if (/Threshold/i.test(key)) {
+        const sec = cat().bySec[secKey];
+        const maxKey = sec && sec.keys.map((x) => x[0]).find((k) => /(MAXCOUNT|MaxValue)$/i.test(k));
+        interp.push("Schwelle: ab bzw. unter diesem Wert greift die Wirkung (die Richtung steht in der Doku-Zeile: „Minimum Threshold to …“ = ab diesem Wert).");
+        if (maxKey && typeof c[maxKey] === "number" && c[maxKey] > 0) interp.push("Das sind " + fmt((v / c[maxKey]) * 100, 0) + " % des Maximums (" + fmt(c[maxKey], 0) + ").");
+      } else if (/(Multiplier|Multip|Divider|Modifier)$/i.test(key)) {
+        interp.push("Faktor " + fmt(v, 3) + (v < 1 ? " → Wirkung auf " + fmt(v * 100, 0) + " % abgeschwächt (Teiler/Dämpfung)." : v > 1 ? " → Wirkung um " + fmt((v - 1) * 100, 0) + " % verstärkt." : " → unverändert (1 = Vanilla)."));
+      } else if (/(Timer|Offset)/i.test(key) && !/(Tick)/i.test(key)) {
+        interp.push(fmtTime(v) + (/(Offset)$/i.test(key) ? " – zufälliger Zuschlag auf den zugehörigen Timer, damit es nicht immer gleich lange dauert." : "."));
+      } else if (/(Radius|Range)/i.test(key)) {
+        interp.push(fmt(v, 1) + " Meter.");
+      } else if (/Tremor$/i.test(key)) {
+        interp.push("Zielzittern " + fmt(v, 1) + " – höher = stärkeres Wackeln beim Zielen.");
+      } else if (d && d.unit === "SEC") {
+        interp.push(fmtTime(v) + ".");
+      } else if (d && d.unit === "%") {
+        interp.push(fmt(v, 2) + " %.");
+      } else if (/Loss|Drained|Deplet|Damage/i.test(key)) {
+        interp.push("Abzug von " + fmt(v, 2) + (Number.isFinite(tick) && /Tick/i.test(key) ? " je Takt." : "."));
+      } else {
+        interp.push("Aktueller Wert: " + fmt(v, 4) + ".");
+      }
+    } else if (Array.isArray(v)) {
+      interp.push("Liste mit " + v.length + " Einträgen.");
+    }
+    if (interp.length) lines.push("Interpretation (aus Name, Doku und deinen Werten abgeleitet):\n" + interp.join("\n"));
+    const orig = origOf(item);
+    const cmp = [];
+    if (d && typeof v === "number" && Number.isFinite(Number(d.def)) && Number(d.def) !== v) {
+      const dv = Number(d.def);
+      cmp.push("Standard laut Doku: " + dv + (dv !== 0 ? " → dein Wert liegt " + fmt(Math.abs((v / dv - 1) * 100), 0) + " % " + (v > dv ? "darüber" : "darunter") : "") + ".");
+    }
+    if (orig && !sameVal(orig[key], v)) cmp.push("Geladener Wert (Datei): " + JSON.stringify(orig[key]) + ".");
+    if (cmp.length) lines.push(cmp.join(" "));
+    return lines.join("\n\n");
   }
 
   /** Zahlenfeld, das direkt in item.json[key] schreibt. */
@@ -861,7 +956,7 @@
     const val = item.json[key];
     if (val === undefined) {
       return h("div", { class: "field" }, [
-        h("label", {}, [info.label, tipNode(info.help), h("span", { class: "pill", text: "nicht in der Datei" })]),
+        h("label", {}, [info.label, tipNode(() => explain(item, secKey, key, info)), h("span", { class: "pill", text: "nicht in der Datei" })]),
         h("button", {
           class: "btn small",
           type: "button",
@@ -898,7 +993,7 @@
     const wrap = h("div", { class: "field" + (type === "a" ? " span2" : "") + (changed ? " ov2-changed" : "") }, [
       h("label", {}, [
         info.label,
-        tipNode(info.help),
+        tipNode(() => explain(item, secKey, key, info)),
         h("span", { class: "mp-key mono muted small", text: key }),
         orig && changed
           ? h("button", { class: "btn icon small ov2-reset", type: "button", title: "Auf den geladenen Wert zurücksetzen (" + JSON.stringify(orig[key]) + ")", text: "↺", onclick: () => (setVal(item, key, JSON.parse(JSON.stringify(orig[key]))), render()) })

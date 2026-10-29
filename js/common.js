@@ -498,3 +498,58 @@ window.EQE = window.EQE || {};
     });
   };
 })(window.EQE);
+
+// ---------------------------------------------------------------- Tooltips ("?"): frei schwebend, nie vom Container abgeschnitten
+(function () {
+  "use strict";
+  let box = null;
+  let current = null;
+  function ensure() {
+    if (box) return box;
+    box = document.createElement("div");
+    box.className = "eqe-tooltip";
+    box.style.display = "none";
+    document.body.appendChild(box);
+    return box;
+  }
+  function show(el) {
+    let text = "";
+    try {
+      text = typeof el.__tip === "function" ? el.__tip() : el.getAttribute("data-tip") || "";
+    } catch (e) {
+      text = el.getAttribute("data-tip") || "";
+    }
+    if (!text) return;
+    current = el;
+    const b = ensure();
+    b.textContent = text;
+    b.style.display = "block";
+    const r = el.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    const w = b.offsetWidth;
+    const hgt = b.offsetHeight;
+    let left = Math.min(Math.max(8, r.left - 12), Math.max(8, vw - w - 8));
+    let top = r.bottom + 8;
+    if (top + hgt > vh - 8) top = Math.max(8, r.top - hgt - 8);
+    b.style.left = left + "px";
+    b.style.top = top + "px";
+  }
+  function hide() {
+    current = null;
+    if (box) box.style.display = "none";
+  }
+  const tipOf = (t) => (t && t.closest ? t.closest(".tip") : null);
+  document.addEventListener("mouseover", (e) => {
+    const t = tipOf(e.target);
+    if (t) show(t);
+    else if (current) hide();
+  });
+  document.addEventListener("focusin", (e) => {
+    const t = tipOf(e.target);
+    if (t) show(t);
+  });
+  document.addEventListener("focusout", hide);
+  document.addEventListener("scroll", hide, true);
+  document.addEventListener("keydown", (e) => e.key === "Escape" && hide());
+})();
