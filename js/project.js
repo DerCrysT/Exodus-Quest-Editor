@@ -14,14 +14,15 @@ window.EQE = window.EQE || {};
   // Bearbeitbar: quest, npc, dialog, stash, trader, tcat (Handelskategorie), bcat (Tauschkategorie).
   // Nur Anzeige/Durchreichen: zones, tiers, radiation, anomalies (Karte) und tsettings (Trader-Hauptsettings).
   const MP_KINDS = ["medplus", "mp_zombie", "mp_animal", "mp_blade", "mp_weapon", "mp_liquid", "mp_soup", "mp_fear"];
-  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS);
+  const RAD_KINDS = ["rad_general", "rad_bombing", "rad_zones", "rad_wrecks", "rad_cloth", "rad_filter", "rad_bombzones"];
+  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS);
   const ID_KEY = { quest: "QuestId", npc: "NpcId", dialog: "DialogId", stash: "StashId", trader: "trader_id" };
   // Dateien ohne ID im JSON: die ID ist der Dateiname (ohne .json) – bei Kategorien so von den Tradern referenziert
-  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS);
+  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS);
   const NAME_KEY = { quest: "Title", npc: "Name", dialog: "Title", stash: "Mode", trader: "trader_name", tcat: "name_category", bcat: "name_category" };
-  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus" };
+  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus", rad_general: "Radiation", rad_bombing: "Radiation", rad_zones: "Radiation", rad_wrecks: "Radiation", rad_cloth: "Radiation", rad_filter: "Radiation", rad_bombzones: "Radiation" };
   const FOLDER_MARKER = { tcat: "trader_category_list", bcat: "barter_category_list" };
-  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen" };
+  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen", rad_general: "Radiation-Config", rad_bombing: "Radiation Bombardement", rad_zones: "Strahlungszonen", rad_wrecks: "Wrack-Zonen", rad_cloth: "Schutz-Ausrüstung", rad_filter: "Radiation-Filter", rad_bombzones: "Bomben-Zonen" };
   const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
@@ -91,6 +92,13 @@ window.EQE = window.EQE || {};
     }
     if (!j || typeof j !== "object") return null;
     // MedPlus (Medizin-Mod): Config und Tabellen-Dateien
+    if (j.Rad_ConfigVersion !== undefined) return "rad_general";
+    if (j.GeneralBombing_ConfigVersion !== undefined) return "rad_bombing";
+    if (Array.isArray(j.RadClothAll)) return "rad_cloth";
+    if (Array.isArray(j.FilterAll)) return "rad_filter";
+    if (Array.isArray(j.m_RadiationTrigger)) return "rad_zones";
+    if (Array.isArray(j.m_RadiationWreckTrigger)) return "rad_wrecks";
+    if (Array.isArray(j.m_BombingTrigger)) return "rad_bombzones";
     if (Array.isArray(j.ZombieDamageAll)) return "mp_zombie";
     if (Array.isArray(j.AnimalDamageAll)) return "mp_animal";
     if (Array.isArray(j.BladeDamageAll)) return "mp_blade";
@@ -1055,6 +1063,7 @@ window.EQE = window.EQE || {};
     registerExtra: (x) => extras.push(x),
     registerSerializer: (kinds, fn) => kinds.forEach((k) => (serializers[k] = fn)),
     MP_KINDS: MP_KINDS,
+    RAD_KINDS: RAD_KINDS,
     notify: () => emit({ type: "extra" }),
     buildZip: buildZip,
     pendingDeletes,

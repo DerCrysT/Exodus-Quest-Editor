@@ -26,6 +26,11 @@
     const item = EQE.Project.get(uid);
     if (!item) return;
     if (!EQE.editors[item.kind]) {
+      if (EQE.Project.RAD_KINDS.indexOf(item.kind) > -1) {
+        switchTab("radiation");
+        if (EQE.Radiation) EQE.Radiation.openItem(uid);
+        return;
+      }
       if (EQE.Project.MP_KINDS.indexOf(item.kind) > -1) {
         switchTab("medplus");
         if (EQE.MedPlus) EQE.MedPlus.openItem(uid);
@@ -48,6 +53,8 @@
     refreshers.overrides = overrides.refresh;
     const medplus = EQE.MedPlus.init(document.getElementById("panel-medplus"));
     refreshers.medplus = medplus.refresh;
+    const radiation = EQE.Radiation.init(document.getElementById("panel-radiation"));
+    refreshers.radiation = radiation.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));
     refreshers.project = project.refresh;
     refreshers.overview = overview.refresh;

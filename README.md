@@ -51,6 +51,10 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
     (doppelte Einträge, ungleich lange Listen, Summe Stecken+Durchschuss ≠ 100 %). Änderungen werden wie bei Dialogen/Tradern per „Änderungen speichern“ in die JSON-Dateien zurückgeschrieben
     (Originalformat: 4 Leerzeichen, Kommazahlen mit `.0`). Die „?“-Texte zitieren die originale MedPlus-Doku (`MedPlus explanation.txt`, falls im Ordner) und ergänzen sie. **Tick-Zeiten (alle):** setzt alle Takt-Zeiten (z. B. überall 1 s) und rechnet die „pro Takt“-Werte und Chancen so mit, dass sich das Verhalten nicht ändert.
 
+12. **Radiation (Radiation-Mod):** Bereich *Medizin → Radiation*, gleicher Aufbau wie MedPlus. Bearbeitet `GeneralSetting.json` (Strahlenkrankheit, Schutz, Heilung, Abfall), `BombingTrim.json` (Bombardement und die drei Panel-Bomben),
+    `RadiationZones.json` und `WreckZones.json` (Liste + Detail, Live-Wirkung je Zone), `RadClothProtection.json` und `FilterProtection.json` (Tabellen mit Doppelt-Prüfung). Dazu eine Zonen-Übersicht nach Gefahr, „?“-Erklärungen mit Zitat aus der Mod-Doku und Live-Berechnungen
+    (Zeit bis Stufe 1 bis kritisch, Tod, Blutverlust, Überdosis bei geladenem MedPlus). Geschrieben wird im Originalformat.
+
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
 Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).
 
@@ -91,6 +95,7 @@ js/cfgparse.js        config.cpp-Parser, Klassen-Register, Vererbung, Kategorisi
 js/cfgbin.js          config.bin (rapified) und PBO-Archive lesen
 js/overrides.js       Override-Tool (Klassen bearbeiten, Config erzeugen)
 js/medplus*.js        MedPlus-Editor (Daten, Texte/Erklärungen, Oberfläche, Live-Berechnung)
+js/radiation*.js      Radiation-Editor (nutzt die Bausteine aus medplus.js)
 js/maptab.js          Karten-Tab (iframe, Marker/Daten aus dem Projekt)
 map/                  Gebaute interaktive Karte inkl. DayZone_Map.webp
 js/overview.js        Projekt-Tab (Laden, Liste, Prüfung, Export) und NPC-Übersicht

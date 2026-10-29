@@ -49,6 +49,7 @@
     <div class="nav-group">
       <div class="nav-title">Medizin</div>
       <button class="tab" data-tab="medplus"><span class="ico">✚</span>MedPlus</button>
+      <button class="tab" data-tab="radiation"><span class="ico">☢</span>Radiation</button>
     </div>
     <div class="nav-group">
       <div class="nav-title">Config</div>
@@ -74,6 +75,7 @@
   <section class="panel" id="panel-map"></section>
   <section class="panel" id="panel-overrides"></section>
   <section class="panel" id="panel-medplus"></section>
+  <section class="panel" id="panel-radiation"></section>
 
   <section class="panel" id="panel-help">
     <div class="help-page">
@@ -113,6 +115,10 @@
       <p>Im Bereich <em>Medizin &rarr; MedPlus</em> bearbeitest du die JSON-Dateien des Medizin-Mods MedPlus. Lade den MedPlus-Ordner (Knopf oben im Tab). Links wählst du ein Thema (z.&nbsp;B. Gehirnerschütterung, Schusswunden, Betrunkenheit),
          rechts stehen die Werte mit <span class="tip">?</span>-Erklärung und eine <strong>Live-Berechnung</strong>, die sich bei jeder Änderung aktualisiert (etwa: wie schnell man verblutet, wie viel eine Suppe über ihre Dauer heilt).
          Die Tabellen (Zombies, Tiere, Klingen, Munition, Getränke) lassen sich durchsuchen, ergänzen und duplizieren. „Änderungen speichern“ schreibt die Dateien zurück.</p>
+      <h2>Radiation</h2>
+      <p>Im Bereich <em>Medizin &rarr; Radiation</em> bearbeitest du die JSON-Dateien des Radiation-Mods: Strahlenkrankheit, Schutz und Heilung, Bombardement (inklusive der drei Panel-Bomben) sowie die Tabellen mit
+         Strahlungszonen, Wrack-Zonen, Schutz-Ausrüstung und Filtern. Wie bei MedPlus gibt es „?“-Erklärungen (mit Zitat aus der Mod-Doku) und Live-Berechnungen &mdash; z.&nbsp;B. nach wie vielen Sekunden man in einer Zone Stufe 1 bzw. den kritischen Wert erreicht.
+         Die „Zonen-Übersicht“ listet alle Zonen nach Gefahr. „Änderungen speichern“ schreibt die Dateien zurück.</p>
       <h2>Hinweise</h2>
       <ul>
         <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
@@ -163,6 +169,10 @@
 <script src="js/medplus-doc.js"></script>
 <script src="js/medplus-text.js"></script>
 <script src="js/medplus.js"></script>
+<script src="js/radiation-data.js"></script>
+<script src="js/radiation-doc.js"></script>
+<script src="js/radiation-text.js"></script>
+<script src="js/radiation.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>

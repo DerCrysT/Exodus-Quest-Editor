@@ -640,7 +640,11 @@
   }
 
   function renderCalc(item, secKey) {
-    const lines = calcFor(item, secKey);
+    return calcBox(calcFor(item, secKey));
+  }
+
+  /** Live-Berechnungs-Kasten aus Zeilen (row/head/warn/ok); null, wenn leer. */
+  function calcBox(lines) {
     const box = h("div", { class: "mp-calc" });
     if (!lines.length) return null;
     box.appendChild(h("div", { class: "check-head", text: "Live-Berechnung" }));
@@ -654,9 +658,12 @@
   }
 
   // ---------------------------------------------------------------- JSON schreiben (Format der Originaldateien, Kommazahlen mit .0)
+  /** Zusätzliche Kommazahl-Schlüssel je Dateityp (z. B. aus dem Radiation-Katalog), damit "5.0" als "5.0" geschrieben wird. */
+  const extraFloatKeys = {};
   function floatNames(item) {
     const set = new Set();
     if (item.kind === "medplus") cat().secs.forEach((s) => s.keys.forEach(([k, t]) => t === "f" && set.add(k)));
+    (extraFloatKeys[item.kind] || []).forEach((k) => set.add(k));
     const raw = item.rawText || "";
     let m;
     const rx = /"([A-Za-z0-9_]+)"\s*:\s*\[?\s*-?\d+\.\d/g;
@@ -1589,6 +1596,30 @@
     render();
     return { refresh: render };
   }
+
+  /** Gemeinsame Bausteine für weitere Editoren im MedPlus-Stil (z. B. Radiation). */
+  EQE.MPKit = {
+    fmt: fmt,
+    fmtTime: fmtTime,
+    row: row,
+    head: head,
+    warn: warn,
+    ok: ok,
+    num: num,
+    tipNode: tipNode,
+    chipEditor: chipEditor,
+    numInput: numInput,
+    origOf: origOf,
+    setVal: setVal,
+    sameVal: sameVal,
+    classSuggest: classSuggest,
+    calcBox: calcBox,
+    stringify: stringify,
+    extraFloatKeys: extraFloatKeys,
+    HP_MAX: HP_MAX,
+    odData: odData,
+    dosesTo: dosesTo,
+  };
 
   EQE.MedPlus = {
     init: init,
