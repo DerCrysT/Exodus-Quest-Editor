@@ -228,34 +228,42 @@ window.EQE = window.EQE || {};
   }
 
   // ---------------------------------------------------------------- Zusammengeführte Knoten
-  function newMerged(base) {
-    return { base: base || "", props: new Map(), children: new Map() };
+  // Config-Namen sind nicht groß-/kleinschreibungsabhängig (binarisierte Configs schreiben z. B. "cfgVehicles"):
+  // alle Maps sind mit dem kleingeschriebenen Namen verschlüsselt, Anzeigenamen stehen in .name / .path.
+  const lc = (x) => String(x).toLowerCase();
+  const SECTION_CASE = { cfgvehicles: "CfgVehicles", cfgweapons: "CfgWeapons", cfgmagazines: "CfgMagazines", cfgammo: "CfgAmmo" };
+
+  function newMerged(base, name) {
+    return { name: name || "", base: base || "", props: new Map(), children: new Map() };
   }
 
   function mergeInto(target, node) {
     if (node.base) target.base = node.base;
     node.props.forEach((p) => {
+      const k = lc(p.name);
       if (p.array && p.op === "+=") {
-        const old = target.props.get(p.name);
+        const old = target.props.get(k);
         const items = old && old.array ? old.items.slice() : [];
-        target.props.set(p.name, { array: true, items: items.concat(p.items) });
-      } else if (p.array) target.props.set(p.name, { array: true, items: p.items.slice() });
-      else target.props.set(p.name, { array: false, raw: p.raw });
+        target.props.set(k, { name: p.name, array: true, items: items.concat(p.items) });
+      } else if (p.array) target.props.set(k, { name: p.name, array: true, items: p.items.slice() });
+      else target.props.set(k, { name: p.name, array: false, raw: p.raw });
     });
     node.children.forEach((c) => {
-      if (c.forward && !target.children.has(c.name)) return;
-      let t = target.children.get(c.name);
+      const k = lc(c.name);
+      if (c.forward && !target.children.has(k)) return;
+      let t = target.children.get(k);
       if (!t) {
-        t = newMerged(c.base);
-        target.children.set(c.name, t);
+        t = newMerged(c.base, c.name);
+        target.children.set(k, t);
       }
       if (!c.forward) mergeInto(t, c);
     });
   }
 
   // ---------------------------------------------------------------- Register
-  const sources = []; // {path, root, patches:[], overrides:bool}
-  let sections = new Map(); // Abschnitt -> Map(Klassenname -> Entry)
+  const sources = []; // {path, root, patches:[], overrides:bool, text}
+  let sections = new Map(); // Abschnitt (Anzeigename) -> Map(kleingeschriebener Klassenname -> Entry)
+  let sectionNames = new Map(); // kleingeschrieben -> Anzeigename
   let cacheEff = new Map();
   let cacheCls = new Map();
   const listeners = [];
@@ -269,39 +277,50 @@ window.EQE = window.EQE || {};
     return /(^|\/)Exodus_Overrides(\/|$)/i.test(String(path || ""));
   }
 
-  /** Text einlesen und als Quelle vormerken (rebuild() danach nicht vergessen). Rückgabe: {overrides, root} */
-  function ingestText(text, path) {
-    const root = parse(String(text).replace(/^﻿/, ""));
-    const idx = sources.findIndex((s) => s.path === path);
+  /** Bereits geparsten Klassenbaum als Quelle vormerken (rebuild() danach nicht vergessen). */
+  function ingestRoot(root, path, text) {
     const patches = [];
     root.children.forEach((c) => {
-      if (c.name === "CfgPatches") c.children.forEach((p) => !p.forward && patches.push(p.name));
+      if (lc(c.name) === "cfgpatches") c.children.forEach((p) => !p.forward && patches.push(p.name));
     });
-    const src = { path: path, root: root, patches: patches, overrides: isOverridePath(path), text: text };
+    const src = { path: path, root: root, patches: patches, overrides: isOverridePath(path), text: text || "" };
+    const idx = sources.findIndex((x) => x.path === path);
     if (idx > -1) sources[idx] = src;
     else sources.push(src);
     return src;
   }
 
+  /** Text einlesen und als Quelle vormerken. */
+  function ingestText(text, path) {
+    return ingestRoot(parse(String(text).replace(/^\ufeff/, "")), path, text);
+  }
+
   function rebuild() {
     sections = new Map();
+    sectionNames = new Map();
     cacheEff = new Map();
     cacheCls = new Map();
     sources.forEach((src) => {
       if (src.overrides) return; // eigene Overrides sind keine Quelle
       src.root.children.forEach((sec) => {
-        if (sec.name === "CfgPatches" || sec.forward) return;
-        let map = sections.get(sec.name);
+        if (lc(sec.name) === "cfgpatches" || sec.forward || !/^cfg/i.test(sec.name)) return;
+        let secName = sectionNames.get(lc(sec.name));
+        if (!secName) {
+          secName = SECTION_CASE[lc(sec.name)] || sec.name;
+          sectionNames.set(lc(sec.name), secName);
+        }
+        let map = sections.get(secName);
         if (!map) {
           map = new Map();
-          sections.set(sec.name, map);
+          sections.set(secName, map);
         }
         sec.children.forEach((cls) => {
           if (cls.forward) return;
-          let e = map.get(cls.name);
+          const k = lc(cls.name);
+          let e = map.get(k);
           if (!e) {
-            e = { section: sec.name, name: cls.name, base: "", own: newMerged(""), files: [] };
-            map.set(cls.name, e);
+            e = { section: secName, name: cls.name, base: "", own: newMerged("", cls.name), files: [] };
+            map.set(k, e);
           }
           if (cls.base) e.base = cls.base;
           mergeInto(e.own, cls);
@@ -313,19 +332,25 @@ window.EQE = window.EQE || {};
   }
 
   function getEntry(section, name) {
-    const m = sections.get(section);
-    return m ? m.get(name) || null : null;
+    const m = sections.get(sectionNames.get(lc(section)) || section);
+    return m ? m.get(lc(name)) || null : null;
+  }
+
+  /** Klassennamen eines Abschnitts (Anzeigenamen). */
+  function classNames(section) {
+    const m = sections.get(sectionNames.get(lc(section)) || section);
+    return m ? Array.from(m.values()).map((e) => e.name) : [];
   }
 
   /** Klasse samt Basisklassen (nur im selben Abschnitt); unaufgelöste Basis steht in .missing. */
   function chain(entry) {
     const out = [entry];
     let missing = "";
-    const seen = new Set([entry.name]);
+    const seen = new Set([lc(entry.name)]);
     let cur = entry;
     while (cur.base) {
-      if (seen.has(cur.base)) break;
-      seen.add(cur.base);
+      if (seen.has(lc(cur.base))) break;
+      seen.add(lc(cur.base));
       const b = getEntry(entry.section, cur.base);
       if (!b) {
         missing = cur.base;
@@ -346,16 +371,16 @@ window.EQE = window.EQE || {};
   }
 
   function flattenInto(map, node, prefix, from) {
-    node.props.forEach((p, name) => {
-      const key = prefix + name;
-      map.set(key, { array: p.array, raw: p.raw, items: p.items, from: from });
+    node.props.forEach((p) => {
+      const path = prefix + p.name;
+      map.set(lc(path), { path: path, array: p.array, raw: p.raw, items: p.items, from: from });
     });
-    node.children.forEach((child, cname) => flattenInto(map, child, prefix + cname + "/", from));
+    node.children.forEach((child) => flattenInto(map, child, prefix + child.name + "/", from));
   }
 
-  /** Wirksame Eigenschaften (Pfad "A/B/prop" -> {array, raw|items, from}) inkl. Vererbung; abgeleitete Klassen überschreiben. */
+  /** Wirksame Eigenschaften (kleingeschriebener Pfad "a/b/prop" -> {path, array, raw|items, from}) inkl. Vererbung. */
   function effective(entry) {
-    const key = entry.section + "/" + entry.name;
+    const key = lc(entry.section + "/" + entry.name);
     let eff = cacheEff.get(key);
     if (eff) return eff;
     eff = new Map();
@@ -364,6 +389,11 @@ window.EQE = window.EQE || {};
     eff.missingBase = c.missing;
     cacheEff.set(key, eff);
     return eff;
+  }
+
+  /** Eigenschaft nach Pfad (Groß-/Kleinschreibung egal). */
+  function effProp(entry, path) {
+    return effective(entry).get(lc(path));
   }
 
   // ---------------------------------------------------------------- Werte lesen
@@ -380,11 +410,11 @@ window.EQE = window.EQE || {};
     return Number.isFinite(n) ? n : NaN;
   }
   function effScalar(entry, path) {
-    const p = effective(entry).get(path);
+    const p = effProp(entry, path);
     return p && !p.array ? p.raw : undefined;
   }
   function effArray(entry, path) {
-    const p = effective(entry).get(path);
+    const p = effProp(entry, path);
     return p && p.array ? p.items : undefined;
   }
   function effStrings(entry, path) {
@@ -410,12 +440,14 @@ window.EQE = window.EQE || {};
   };
   const WEAPON_SLOT_RE = /^(weapon|suppressor|optics|pistol|bayonet|buttstock|handguard|lightsource|magazine|cartridge|ammo|muzzle|rail|grip|bipod|stock)/i;
 
+  const SECTION_CANON = { CfgVehicles: 1, CfgWeapons: 1, CfgMagazines: 1, CfgAmmo: 1 };
+
   function cat(group, sub) {
     return { group: group, sub: sub || "" };
   }
 
   function classify(entry) {
-    const key = entry.section + "/" + entry.name;
+    const key = lc(entry.section + "/" + entry.name);
     let c = cacheCls.get(key);
     if (c) return c;
     c = classifyUncached(entry);
@@ -431,22 +463,23 @@ window.EQE = window.EQE || {};
     const eff = effective(entry);
     const names = chainNames(entry);
     const has = (re) => names.some((n) => re.test(n));
-    const sec = entry.section;
+    const sec = Object.keys(SECTION_CANON).find((k) => lc(k) === lc(entry.section)) || entry.section;
     if (sec === "CfgVehicles") {
       const slots = effStrings(entry, "inventorySlot");
+      const nutrition0 = Array.from(eff.keys()).some((k) => k.indexOf("nutrition/") === 0);
       if (slots.length) {
         const clothing = slots.find((s) => CLOTHING_SLOTS[s]);
         if (clothing) return cat("Kleidung", clothing + " – " + CLOTHING_SLOTS[clothing]);
         if (slots.some((s) => WEAPON_SLOT_RE.test(s))) return cat("Waffenzubehör", slots[0]);
-        return cat("Anbauteile (Slot-Items)", slots[0]);
+        if (!(nutrition0 || has(/^Edible_Base$/i))) return cat("Anbauteile (Slot-Items)", slots[0]);
       }
-      const nutrition = Array.from(eff.keys()).some((k) => k.indexOf("Nutrition/") === 0);
-      if (nutrition || has(/^Edible_Base$/)) {
-        return eff.has("liquidContainerType") ? cat("Essen & Trinken", "Getränke / Flüssigkeiten") : cat("Essen & Trinken", "Essen");
+      const nutrition = nutrition0;
+      if (nutrition || has(/^Edible_Base$/i)) {
+        return eff.has("liquidcontainertype") ? cat("Essen & Trinken", "Getränke / Flüssigkeiten") : cat("Essen & Trinken", "Essen");
       }
       if (has(/Clothing|Backpack|Vest/i)) return cat("Kleidung", "Ohne Slot");
-      if (eff.has("itemsCargoSize")) return cat("Behälter & Lagerung", topBase(names));
-      if (has(/^(Inventory_Base|ItemBase|Container_Base)$/)) return cat("Sonstige Items", topBase(names));
+      if (eff.has("itemscargosize")) return cat("Behälter & Lagerung", topBase(names));
+      if (has(/^(Inventory_Base|ItemBase|Container_Base)$/i)) return cat("Sonstige Items", topBase(names));
       return cat("Sonstige Klassen", topBase(names));
     }
     if (sec === "CfgWeapons") {
@@ -478,6 +511,9 @@ window.EQE = window.EQE || {};
   EQE.Cfg = {
     parse: parse,
     ingestText: ingestText,
+    ingestRoot: ingestRoot,
+    classNames: classNames,
+    effProp: effProp,
     rebuild: rebuild,
     clear: clear,
     sources: () => sources,

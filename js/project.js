@@ -521,10 +521,9 @@ window.EQE = window.EQE || {};
     const result = { counts, replaced: 0, unknown: [], errors: [], configs: 0 };
     for (const e of entries) {
       const name = e.path || e.file.name;
-      if (/(^|\/)config\.cpp$/i.test(name) && EQE.Cfg) {
+      if (EQE.CfgBin && EQE.CfgBin.isConfigSource(name)) {
         try {
-          EQE.Cfg.ingestText(await e.file.text(), name);
-          result.configs++;
+          result.configs += await EQE.CfgBin.ingestFile(e.file, name);
         } catch (err) {
           result.errors.push(name + " (" + err.message + ")");
         }
@@ -927,7 +926,7 @@ window.EQE = window.EQE || {};
   async function walkHandle(dir, prefix, out) {
     for await (const [name, h] of dir.entries()) {
       if (h.kind === "directory") await walkHandle(h, prefix + name + "/", out);
-      else if (/\.json$/i.test(name) || /^config\.cpp$/i.test(name)) {
+      else if (/\.json$/i.test(name) || /^config\.(cpp|bin)$/i.test(name) || /\.pbo$/i.test(name)) {
         try {
           out.push({ file: await h.getFile(), path: prefix + name });
         } catch (e) {

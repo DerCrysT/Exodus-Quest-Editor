@@ -99,7 +99,7 @@
          Marker (Doppelklick öffnet den Eintrag im Editor). Liegen Zones-, Tiers-, Radiation- oder Anomalies-JSONs im Projektordner, werden sie
          automatisch in der Karte angezeigt.</p>
       <h2>Overrides (config.cpp)</h2>
-      <p>Im Bereich <em>Config → Overrides</em> lädst du die <code>config.cpp</code>-Dateien deines Projektordners (oder wählst nur einen Ordner mit config.cpp). Das Tool sortiert alle Klassen vor
+      <p>Im Bereich <em>Config → Overrides</em> lädst du <code>config.cpp</code>, <code>config.bin</code> oder ganze <code>.pbo</code>-Dateien (aus dem Projektordner oder z.&nbsp;B. <code>DayZServer/addons</code> für die Vanilla-Basisklassen; aus PBOs wird nur die Config gelesen). Das Tool sortiert alle Klassen vor
          (Kleidung nach Slot, Essen &amp; Trinken, Waffen, Magazine, Munition …). Du klickst eine Klasse an und änderst Größe, Cargo, Schutz, Haltbarkeit, Nährwerte u.&nbsp;v.&nbsp;m. &mdash; per Zahlenfeld, Dropdown oder Häkchen.
          Mit den Häkchen in der Liste kannst du mehrere Klassen markieren und Werte für alle auf einmal setzen oder umrechnen (z.&nbsp;B. Schutz ×&nbsp;0,8).</p>
       <p>Gespeichert wird nur, was du geändert hast, in <code>Exodus_Overrides/Exodus_Overrides/config.cpp</code> (mit <code>$PBOPREFIX$.txt</code>) &mdash; der Ordner wird im Projektordner angelegt, falls er fehlt, sonst wird die vorhandene Datei weiterbearbeitet.
@@ -140,6 +140,7 @@
 <script src="js/common.js"></script>
 <script src="js/data.js"></script>
 <script src="js/cfgparse.js"></script>
+<script src="js/cfgbin.js"></script>
 <script src="js/project.js"></script>
 <script src="js/shell.js"></script>
 <script src="js/quest.js"></script>

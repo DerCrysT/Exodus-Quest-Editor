@@ -214,7 +214,7 @@
     return Cfg.effArray(entry, path);
   }
   function effProp(entry, path) {
-    return Cfg.effective(entry).get(path);
+    return Cfg.effective(entry).get(path.toLowerCase());
   }
 
   function ensureEdit(entry) {
@@ -370,9 +370,10 @@
       else out.push(pad + p.name + " = " + fmtValue(p.v) + ";");
     });
     node.children.forEach((child, seg) => {
-      const inOwn = !!(refs[0] && refs[0].children.has(seg));
-      const inBase = !inOwn && (child.__inh || refs.slice(1).some((r) => r && r.children.has(seg)));
-      const childRefs = refs.map((r) => (r ? r.children.get(seg) || null : null));
+      const lseg = seg.toLowerCase();
+      const inOwn = !!(refs[0] && refs[0].children.has(lseg));
+      const inBase = !inOwn && (child.__inh || refs.slice(1).some((r) => r && r.children.has(lseg)));
+      const childRefs = refs.map((r) => (r ? r.children.get(lseg) || null : null));
       out.push(pad + "class " + seg + (inBase ? ": " + seg : ""));
       out.push(pad + "{");
       emitNode(child, childRefs, pad + "\t", out);
@@ -387,9 +388,16 @@
     return { refs: c.map((e) => e.own), entry: entry };
   }
 
+  /** Basisklasse mit der Schreibweise der Definition (Config-Namen sind nicht groß-/kleinschreibungsabhängig). */
+  function canonBase(section, b) {
+    if (!b) return "";
+    const e = Cfg.getEntry(section, b);
+    return e ? e.name : b;
+  }
+
   function emitClass(edit, pad, out) {
     const r = refsFor(edit);
-    const base = r.entry ? r.entry.base : edit.base;
+    const base = canonBase(edit.section, r.entry ? r.entry.base : edit.base);
     out.push(pad + "class " + edit.name + (base ? ": " + base : ""));
     out.push(pad + "{");
     // bei fehlender Quelle: gespeicherte Hinweise (inh) zur Vererbung nutzen
@@ -467,21 +475,21 @@
     sections.forEach((sec) => {
       const edits = keys.filter((k) => state.edits[k].section === sec).map((k) => state.edits[k]);
       // Basisklassen vor abgeleiteten Klassen ausgeben
-      const names = new Set(edits.map((e) => e.name));
+      const names = new Set(edits.map((e) => e.name.toLowerCase()));
       const baseOf = (e) => {
         const entry = Cfg.getEntry(sec, e.name);
-        return entry ? entry.base : e.base;
+        return canonBase(sec, entry ? entry.base : e.base);
       };
       const ordered = [];
       const placed = new Set();
       const place = (e, depth) => {
-        if (placed.has(e.name) || depth > 20) return;
+        if (placed.has(e.name.toLowerCase()) || depth > 20) return;
         const b = baseOf(e);
-        if (b && names.has(b)) {
-          const be = edits.find((x) => x.name === b);
+        if (b && names.has(b.toLowerCase())) {
+          const be = edits.find((x) => x.name.toLowerCase() === b.toLowerCase());
           if (be) place(be, depth + 1);
         }
-        placed.add(e.name);
+        placed.add(e.name.toLowerCase());
         ordered.push(e);
       };
       edits.forEach((e) => place(e, 0));
@@ -489,7 +497,7 @@
       const externals = [];
       ordered.forEach((e) => {
         const b = baseOf(e);
-        if (b && !names.has(b) && externals.indexOf(b) < 0) externals.push(b);
+        if (b && !names.has(b.toLowerCase()) && !externals.some((x) => x.toLowerCase() === b.toLowerCase())) externals.push(b);
       });
       out.push("class " + sec);
       out.push("{");
@@ -614,17 +622,16 @@
     if (kind === "folder") input.webkitdirectory = true;
     else {
       input.multiple = true;
-      input.accept = ".cpp,.hpp,.txt";
+      input.accept = ".cpp,.bin,.pbo";
     }
     document.body.appendChild(input);
     input.addEventListener("change", async () => {
       let n = 0;
       for (const f of Array.from(input.files)) {
         const path = f.webkitRelativePath || f.name;
-        if (kind === "folder" && !/(^|\/)config\.cpp$/i.test(path)) continue;
+        if (kind === "folder" && !EQE.CfgBin.isConfigSource(path)) continue;
         try {
-          Cfg.ingestText(await f.text(), path);
-          n++;
+          n += await EQE.CfgBin.ingestFile(f, path);
         } catch (err) {
           EQE.toast(path + ": " + err.message, true);
         }
@@ -632,7 +639,7 @@
       input.remove();
       Cfg.rebuild();
       afterIngest();
-      EQE.toast(n ? n + " config.cpp geladen." : "Keine config.cpp gefunden.", !n);
+      EQE.toast(n ? n + " Config(s) geladen." : "Keine config.cpp/config.bin/PBO mit Config gefunden.", !n);
     });
     input.click();
   }
@@ -668,8 +675,8 @@
     refs.status = h("span", { class: "status", text: c.files + " config.cpp · " + c.classes + " Klassen · " + c.edits + " geänderte Klasse(n)" });
     refs.saveBtn = h("button", { class: "btn primary", type: "button", text: "In Projektordner speichern…", disabled: !isChanged(), onclick: () => (EQE.Project.canWriteFolder() ? EQE.Project.saveToFolder() : EQE.Project.downloadZip(true)) });
     const bar = h("div", { class: "toolbar" }, [
-      h("button", { class: "btn primary", type: "button", text: "config.cpp-Ordner wählen…", onclick: () => loadFiles("folder") }),
-      h("button", { class: "btn", type: "button", text: "Einzelne config.cpp…", onclick: () => loadFiles("files") }),
+      h("button", { class: "btn primary", type: "button", text: "Ordner wählen (config.cpp / .bin / PBO)…", onclick: () => loadFiles("folder") }),
+      h("button", { class: "btn", type: "button", text: "Einzelne Dateien (cpp / bin / pbo)…", onclick: () => loadFiles("files") }),
       refs.status,
       h("span", { class: "spacer" }),
       h("div", { class: "view-tabs" }, [
@@ -931,8 +938,8 @@
       entry: entry,
       section: entry.section,
       cat: Cfg.classify(entry),
-      hasAny: (list) => list.some((p) => eff.has(p) || !!getEdit(entry, p)),
-      hasPrefix: (pre) => keys.some((k) => k.indexOf(pre) === 0) || Object.keys((state.edits[keyOf(entry)] || { set: {} }).set).some((k) => k.indexOf(pre) === 0),
+      hasAny: (list) => list.some((p) => eff.has(p.toLowerCase()) || !!getEdit(entry, p)),
+      hasPrefix: (pre) => keys.some((k) => k.indexOf(pre.toLowerCase()) === 0) || Object.keys((state.edits[keyOf(entry)] || { set: {} }).set).some((k) => k.indexOf(pre) === 0),
       eff: eff,
     };
   }
@@ -992,8 +999,8 @@
   function suggestions(spec) {
     if (Array.isArray(spec.suggest)) return spec.suggest;
     if (spec.suggest === "slots") return KNOWN_SLOTS;
-    if (spec.suggest === "magazines") return Array.from((Cfg.sections().get("CfgMagazines") || new Map()).keys()).slice(0, 4000);
-    if (spec.suggest === "ammo") return Array.from((Cfg.sections().get("CfgAmmo") || new Map()).keys()).slice(0, 4000);
+    if (spec.suggest === "magazines") return Cfg.classNames("CfgMagazines").slice(0, 4000);
+    if (spec.suggest === "ammo") return Cfg.classNames("CfgAmmo").slice(0, 4000);
     return null;
   }
 
@@ -1196,7 +1203,7 @@
       } else {
         const grid = h("div", { class: "grid2" });
         SPECS.filter((s) => s.group === g.id).forEach((s) => {
-          if (s.needsProp && !ctx.eff.has(s.path) && !getEdit(entry, s.path)) return;
+          if (s.needsProp && !ctx.eff.has(s.path.toLowerCase()) && !getEdit(entry, s.path)) return;
           const node = buildControl(entry, s);
           if (s.type === "strlist" || s.type === "numlist") node.classList.add("span2");
           grid.appendChild(node);
@@ -1271,7 +1278,16 @@
     const eff = Cfg.effective(entry);
     const key = keyOf(entry);
     const ed = (state.edits[key] || { set: {} }).set;
-    const paths = new Set(Array.from(eff.keys()).concat(Object.keys(ed)));
+    const seenPaths = new Set();
+    const paths = new Set();
+    Array.from(eff.values())
+      .map((v) => v.path)
+      .concat(Object.keys(ed))
+      .forEach((pp) => {
+        if (seenPaths.has(pp.toLowerCase())) return;
+        seenPaths.add(pp.toLowerCase());
+        paths.add(pp);
+      });
     let q = "";
     const body = h("tbody");
     const draw = () => {
@@ -1280,7 +1296,7 @@
         .sort()
         .filter((p) => !q || p.toLowerCase().indexOf(q) > -1)
         .forEach((p) => {
-          const e = eff.get(p);
+          const e = eff.get(p.toLowerCase());
           const edit = ed[p] || (state.edits[key] && state.edits[key].set[p]);
           const rawNow = edit ? (edit.array ? "{" + edit.v.join(", ") + "}" : edit.v) : e ? (e.array ? "{" + e.items.join(", ") + "}" : e.raw) : "";
           const effText = e ? (e.array ? "{" + e.items.join(", ") + "}" : e.raw) : "–";

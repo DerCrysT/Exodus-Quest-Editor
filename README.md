@@ -38,12 +38,12 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
    und Stashes erscheinen als Marker; Doppelklick öffnet den Eintrag im Editor. Zones-/Tiers-/Radiation-/Anomalies-JSONs aus dem Projektordner
    werden automatisch angezeigt. Die Karten-App liegt als gebauter Stand im Ordner `map/` (Quelle: Exodus-Interaktivmap, Vite/React).
 
-10. **Overrides (config.cpp):** Bereich *Config → Overrides*. Lädt `config.cpp`-Dateien (ganzen Projektordner im Projekt-Tab oder im Override-Tab einen Ordner wählen),
+10. **Overrides (config.cpp):** Bereich *Config → Overrides*. Lädt `config.cpp`, `config.bin` (binarisiert) und **PBO-Dateien** (es wird nur die enthaltene Config gelesen, der Rest der PBO bleibt unberührt) – ganzen Projektordner im Projekt-Tab oder im Override-Tab einen Ordner wählen,
     erkennt alle Klassen (CfgVehicles, CfgWeapons, CfgMagazines, CfgAmmo …) samt Vererbung und sortiert vor: Kleidung nach Slot, Essen & Trinken, Waffen, Magazine, Munition, Behälter.
     Klasse anklicken und Werte ändern (Gewicht, Inventargröße, Cargo, Lebenspunkte, Schutz je Angriffsart, Isolierung, Nährwerte, Waffenwerte …) – Zahlenfelder, Dropdowns, Häkchen;
     „Alle Werte“ zeigt jede Eigenschaft der Klasse. Mit den Häkchen in der Liste mehrere Klassen markieren und Werte für alle setzen, multiplizieren oder addieren.
     Gespeichert wird **nur Geändertes** in `Exodus_Overrides/Exodus_Overrides/config.cpp` (+ `$PBOPREFIX$.txt`), im Projektordner neu angelegt oder – falls schon vorhanden – weiterbearbeitet.
-    `requiredAddons` werden aus den CfgPatches der betroffenen Configs ermittelt. Texturen (paa/rvmat) werden ignoriert. Basisklassen aus Vanilla werden nur aufgelöst, wenn deren config.cpp mitgeladen wird.
+    `requiredAddons` werden aus den CfgPatches der betroffenen Configs ermittelt. Texturen (paa/rvmat) werden ignoriert. Basisklassen aus Vanilla werden aufgelöst, wenn ihre Config mitgeladen wird – z. B. die Vanilla-PBOs aus `DayZServer/addons` (characters_*.pbo, gear_*.pbo, …). Config-Namen werden ohne Beachtung der Groß-/Kleinschreibung behandelt.
 
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
 Dialogsprünge, Ruf-Bereiche, `{rank:npcId}`, StashId …).
@@ -82,6 +82,7 @@ js/dialog.js          Dialog-Editor inkl. NPC-Auswahl und Ingame-Vorschau
 js/stash.js           Stash-Editor
 js/trader.js          Trader-, Handels- und Tauschkategorie-Editoren
 js/cfgparse.js        config.cpp-Parser, Klassen-Register, Vererbung, Kategorisierung
+js/cfgbin.js          config.bin (rapified) und PBO-Archive lesen
 js/overrides.js       Override-Tool (Klassen bearbeiten, Config erzeugen)
 js/maptab.js          Karten-Tab (iframe, Marker/Daten aus dem Projekt)
 map/                  Gebaute interaktive Karte inkl. DayZone_Map.webp
