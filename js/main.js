@@ -26,6 +26,11 @@
     const item = EQE.Project.get(uid);
     if (!item) return;
     if (!EQE.editors[item.kind]) {
+      if (EQE.Project.AN_KINDS.indexOf(item.kind) > -1 || item.kind === "anomalies") {
+        switchTab("anomaly");
+        if (EQE.Anomaly) EQE.Anomaly.openItem(uid);
+        return;
+      }
       if (EQE.Project.RAD_KINDS.indexOf(item.kind) > -1) {
         switchTab("radiation");
         if (EQE.Radiation) EQE.Radiation.openItem(uid);
@@ -55,6 +60,8 @@
     refreshers.medplus = medplus.refresh;
     const radiation = EQE.Radiation.init(document.getElementById("panel-radiation"));
     refreshers.radiation = radiation.refresh;
+    const anomaly = EQE.Anomaly.init(document.getElementById("panel-anomaly"));
+    refreshers.anomaly = anomaly.refresh;
     const gasmask = EQE.GasMask.init(document.getElementById("panel-gasmask"));
     refreshers.gasmask = gasmask.refresh;
     const overview = EQE.Overview.initOverview(document.getElementById("panel-overview"));

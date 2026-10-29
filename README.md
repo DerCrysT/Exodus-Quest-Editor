@@ -58,6 +58,8 @@ Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installatio
 13. **Gasmasken (Exodus_GM):** Bereich *Medizin → Gasmasken*. Liest die `Exodus_GM.pbo` (config.cpp + Skripte; auch über „Ordner laden“, z. B. den Addons-Ordner des Packs) oder einen vorhandenen Exodus_GM-Quellordner.
     Masken und Filter bearbeiten (Name, Beschreibung, Gewicht, Größe, Filterkapazität, Slots, Haltbarkeit …), neue Klassen anlegen/duplizieren, **Slot-Locks** (welche Slots eine Maske sperrt) und die **Filter-Erkennung** für den Radiation-Mod verwalten sowie CfgSlots ergänzen.
     Mit geladener Radiation-Config zeigt jede Klasse ihren Schutz (mSv), die Laufzeit in Zonen und gegen wie viele Zonen sie komplett schützt; fehlende Schutz-Einträge werden markiert.
+ 13. **Anomalien, Detektoren & Artefakte:** Bereich *Anomalien*, gleicher Aufbau wie MedPlus. Bearbeitet die Ordner *Anomaly & Detectoren* (Balance je Anomalie, Auslöser-Listen, `AnomalySpawn.json`, Detektoren, AutoReload, Teleport-Ziele) und *Artefakt EFX* (`ArtEFX.json`, `ArtEFXMedPlus.json`, zentraler Takt `ArtEFXTimer.json`).
+     Live-Rechnungen: Treffer bis zum Tod, Erfassungsfläche der Detektoren, Artefakt-Wirkung pro Minute und Zeit bis leer, Überdosis mit geladener MedPlus-Config; dazu Übersichten. Mangels Doku sind die „?“-Texte aus den Wertenamen abgeleitet.
     Gespeichert wird der Ordner `Exodus_GM/Exodus_GM/` (`config.cpp`, `Scripts/4_World/…`, `$PBOPREFIX$.txt`) im Projektordner – neu angelegt, falls er fehlt –, den du danach selbst als PBO packst. Die Skripte werden aus den Slot-Lock-Einstellungen erzeugt.
 
 **Umbenennen:** Wird eine ID geändert, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests/NextQuests,
