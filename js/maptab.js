@@ -137,6 +137,14 @@ window.EQE = window.EQE || {};
       } else {
         const keys = type === "zones" ? ["zones", "Zones", "spawnZones", "SpawnZones"] : ["m_RadiationTrigger", "RadiationZones", "radiationZones", "Zones", "zones"];
         const key = keys.find((k) => Array.isArray(j[k])) || Object.keys(j).find((k) => Array.isArray(j[k])) || keys[0];
+        if (type === "radiation") {
+          // Neue Zonen der Karte haben nur wenige Felder: fehlende Werte aus einer vollständigen Zone übernehmen
+          const full = (j[key] || []).reduce((a, z) => (!a || Object.keys(z).length > Object.keys(a).length ? z : a), null);
+          if (full)
+            payload.forEach((z) => {
+              if (Object.keys(z).length <= 6) Object.keys(full).forEach((k) => z[k] === undefined && (z[k] = JSON.parse(JSON.stringify(full[k]))));
+            });
+        }
         j[key] = payload;
       }
     });
