@@ -26,6 +26,11 @@
     const item = EQE.Project.get(uid);
     if (!item) return;
     if (!EQE.editors[item.kind]) {
+      if (EQE.Project.PDA_KINDS.indexOf(item.kind) > -1) {
+        switchTab("pda");
+        if (EQE.Pda) EQE.Pda.openItem(uid);
+        return;
+      }
       if (EQE.Project.AN_KINDS.indexOf(item.kind) > -1 || item.kind === "anomalies") {
         switchTab("anomaly");
         if (EQE.Anomaly) EQE.Anomaly.openItem(uid);
@@ -62,6 +67,8 @@
     refreshers.radiation = radiation.refresh;
     const anomaly = EQE.Anomaly.init(document.getElementById("panel-anomaly"));
     refreshers.anomaly = anomaly.refresh;
+    const pda = EQE.Pda.init(document.getElementById("panel-pda"));
+    refreshers.pda = pda.refresh;
     const mutants = EQE.Mutants.init(document.getElementById("panel-mutants"));
     refreshers.mutants = mutants.refresh;
     const exo = EQE.Exo.init(document.getElementById("panel-exo"));

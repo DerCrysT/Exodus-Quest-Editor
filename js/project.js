@@ -15,15 +15,16 @@ window.EQE = window.EQE || {};
   // Nur Anzeige/Durchreichen: zones, tiers, radiation, anomalies (Karte) und tsettings (Trader-Hauptsettings).
   const MP_KINDS = ["medplus", "mp_zombie", "mp_animal", "mp_blade", "mp_weapon", "mp_liquid", "mp_soup", "mp_fear"];
   const RAD_KINDS = ["rad_general", "rad_bombing", "rad_zones", "rad_wrecks", "rad_cloth", "rad_filter", "rad_bombzones"];
+  const PDA_KINDS = ["pda_factions", "pda_loner"];
   const AN_KINDS = ["an_balance", "an_trigger", "an_detector", "an_reload", "an_teleport", "efx_base", "efx_medplus", "efx_timer"];
-  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS);
+  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS, PDA_KINDS);
   const ID_KEY = { quest: "QuestId", npc: "NpcId", dialog: "DialogId", stash: "StashId", trader: "trader_id" };
   // Dateien ohne ID im JSON: die ID ist der Dateiname (ohne .json) – bei Kategorien so von den Tradern referenziert
-  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS);
+  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS, PDA_KINDS);
   const NAME_KEY = { quest: "Title", npc: "Name", dialog: "Title", stash: "Mode", trader: "trader_name", tcat: "name_category", bcat: "name_category" };
-  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus", rad_general: "Radiation", rad_bombing: "Radiation", rad_zones: "Radiation", rad_wrecks: "Radiation", rad_cloth: "Radiation", rad_filter: "Radiation", rad_bombzones: "Radiation", an_balance: "Anomaly & Detectoren", an_trigger: "Anomaly & Detectoren", an_detector: "Anomaly & Detectoren", an_reload: "Anomaly & Detectoren", an_teleport: "Anomaly & Detectoren", efx_base: "Artefakt EFX", efx_medplus: "Artefakt EFX", efx_timer: "Artefakt EFX" };
+  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus", rad_general: "Radiation", rad_bombing: "Radiation", rad_zones: "Radiation", rad_wrecks: "Radiation", rad_cloth: "Radiation", rad_filter: "Radiation", rad_bombzones: "Radiation", an_balance: "Anomaly & Detectoren", an_trigger: "Anomaly & Detectoren", an_detector: "Anomaly & Detectoren", an_reload: "Anomaly & Detectoren", an_teleport: "Anomaly & Detectoren", efx_base: "Artefakt EFX", efx_medplus: "Artefakt EFX", efx_timer: "Artefakt EFX", pda_factions: "PDA", pda_loner: "PDA" };
   const FOLDER_MARKER = { tcat: "trader_category_list", bcat: "barter_category_list" };
-  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen", rad_general: "Radiation-Config", rad_bombing: "Radiation Bombardement", rad_zones: "Strahlungszonen", rad_wrecks: "Wrack-Zonen", rad_cloth: "Schutz-Ausrüstung", rad_filter: "Radiation-Filter", rad_bombzones: "Bomben-Zonen", an_balance: "Anomalie-Balance", an_trigger: "Anomalie-Auslöser", an_detector: "Detektoren", an_reload: "Anomalie-Neuladen", an_teleport: "Teleport-Ziele", efx_base: "Artefakt-Effekte", efx_medplus: "Artefakt-Effekte MedPlus", efx_timer: "Artefakt-Takt" };
+  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen", rad_general: "Radiation-Config", rad_bombing: "Radiation Bombardement", rad_zones: "Strahlungszonen", rad_wrecks: "Wrack-Zonen", rad_cloth: "Schutz-Ausrüstung", rad_filter: "Radiation-Filter", rad_bombzones: "Bomben-Zonen", an_balance: "Anomalie-Balance", an_trigger: "Anomalie-Auslöser", an_detector: "Detektoren", an_reload: "Anomalie-Neuladen", an_teleport: "Teleport-Ziele", efx_base: "Artefakt-Effekte", efx_medplus: "Artefakt-Effekte MedPlus", efx_timer: "Artefakt-Takt", pda_factions: "PDA-Fraktionen", pda_loner: "PDA Loner-Spawn" };
   const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
@@ -93,6 +94,8 @@ window.EQE = window.EQE || {};
     }
     if (!j || typeof j !== "object") return null;
     // MedPlus (Medizin-Mod): Config und Tabellen-Dateien
+    if (Array.isArray(j.Fraktionen)) return "pda_factions";
+    if (j.StandardKit && Array.isArray(j.PremiumKits)) return "pda_loner";
     if (j.anomalyBalance && typeof j.anomalyBalance === "object") return "an_balance";
     if (Array.isArray(j.AnomalieTriggerSettings)) return "an_trigger";
     if (j.Otklik && typeof j.Otklik === "object" && j.Otklik.DetectorRange !== undefined) return "an_detector";
@@ -1087,6 +1090,7 @@ window.EQE = window.EQE || {};
     MP_KINDS: MP_KINDS,
     RAD_KINDS: RAD_KINDS,
     AN_KINDS: AN_KINDS,
+    PDA_KINDS: PDA_KINDS,
     notify: () => emit({ type: "extra" }),
     buildZip: buildZip,
     pendingDeletes,

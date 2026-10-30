@@ -56,6 +56,7 @@
       <div class="nav-title">Mutanten & Exo</div>
       <button class="tab" data-tab="mutants"><span class="ico">☣</span>Mutanten</button>
       <button class="tab" data-tab="exo"><span class="ico">⛨</span>Exoskelette</button>
+      <button class="tab" data-tab="pda"><span class="ico">▣</span>PDA</button>
     </div>
     <div class="nav-group">
       <div class="nav-title">Anomalien</div>
@@ -90,6 +91,7 @@
   <section class="panel" id="panel-anomaly"></section>
   <section class="panel" id="panel-mutants"></section>
   <section class="panel" id="panel-exo"></section>
+  <section class="panel" id="panel-pda"></section>
 
   <section class="panel" id="panel-help">
     <div class="help-page">
@@ -129,6 +131,9 @@
       <p>Im Bereich <em>Medizin &rarr; MedPlus</em> bearbeitest du die JSON-Dateien des Medizin-Mods MedPlus. Lade den MedPlus-Ordner (Knopf oben im Tab). Links wählst du ein Thema (z.&nbsp;B. Gehirnerschütterung, Schusswunden, Betrunkenheit),
          rechts stehen die Werte mit <span class="tip">?</span>-Erklärung und eine <strong>Live-Berechnung</strong>, die sich bei jeder Änderung aktualisiert (etwa: wie schnell man verblutet, wie viel eine Suppe über ihre Dauer heilt).
          Die Tabellen (Zombies, Tiere, Klingen, Munition, Getränke) lassen sich durchsuchen, ergänzen und duplizieren. „Änderungen speichern“ schreibt die Dateien zurück.</p>
+      <h2>PDA</h2>
+      <p>Der Tab <em>PDA</em> bearbeitet <code>Fraktionsleader.json</code> (Fraktionen mit Leader, Spawn, Mitgliederlimit, Start-Ausrüstung, Avatar-Gruppen) und <code>LonerSpawn.json</code> (Spawn-Position, Standard-Kit und Premium-Kits mit verschachtelter Ausrüstung).
+         Mit geladenen Vanilla-/Mod-Configs gibt es Klassennamen-Vorschläge, Slot-Anzeige und Warnungen bei unbekannten Klassen oder doppelten Slots.</p>
       <h2>Mutanten &amp; Exoskelette</h2>
       <p>Lade die <code>XCP_SFP_Addon.pbo</code> (oder den Quellordner). Der Tab <em>Mutanten</em> zeigt je Mutant die drei Stufen T1/T2/T3 mit Lebenspunkten, Treffer-Rechnung, Beute und einem Faktor-Werkzeug (T2/T3 als Vielfaches von T1).
          Der Tab <em>Exoskelette</em> bearbeitet die fünf Basisteile (Gewicht, Größe, Haltbarkeit, Rüstung) und die Sprung-Faktoren aus dem Skript. Gespeichert werden nur geänderte Configs/Skripte als Quellordner (<code>config.cpp</code>) &mdash; die PBO packst du danach selbst. Mit den geladenen SFP-PBOs zeigt der Mutanten-Tab zusätzlich Rüstung je Trefferzone und den Schaden der Angriffe; geänderte Werte landen in der Override-Config (Schaden über eigene Ammo-Klone je Variante und Stufe).</p>
@@ -202,6 +207,7 @@
 <script src="js/cfgedit.js"></script>
 <script src="js/mutants.js"></script>
 <script src="js/exo.js"></script>
+<script src="js/pda.js"></script>
 <script src="js/gasmask.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
