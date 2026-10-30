@@ -786,6 +786,16 @@ window.EQE = window.EQE || {};
     return out;
   }
 
+  /** Was ist offen? JSON-Dateien (neu/geändert), zu löschende Dateien und Dateinamen der Extras (Configs/Skripte). */
+  function pendingList() {
+    const json = items.filter((i) => i.kind !== "trader" && isChanged(i)).map((it) => ({ path: targetPath(it), label: KIND_LABEL[it.kind] || it.kind }));
+    const traders = byKind("trader");
+    if (traders.length && traders.some(isChanged)) json.push({ path: targetPath(traders[0]), label: "Trader" });
+    const files = [];
+    extras.forEach((x) => x.zipFiles(true).forEach((f) => files.push(f.name)));
+    return { json: json, deletes: pendingDeletes(), files: files };
+  }
+
   const serializers = {};
   function exportText(item) {
     if (!isChanged(item) && item.rawText) return item.rawText;
@@ -1086,6 +1096,7 @@ window.EQE = window.EQE || {};
     exportPath,
     changedCount: () => items.filter(isChanged).length + pendingDeletes().length + extras.reduce((n, x) => n + x.changedCount(), 0),
     registerExtra: (x) => extras.push(x),
+    pendingList,
     registerSerializer: (kinds, fn) => kinds.forEach((k) => (serializers[k] = fn)),
     MP_KINDS: MP_KINDS,
     RAD_KINDS: RAD_KINDS,

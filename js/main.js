@@ -67,6 +67,7 @@
     refreshers.radiation = radiation.refresh;
     const anomaly = EQE.Anomaly.init(document.getElementById("panel-anomaly"));
     refreshers.anomaly = anomaly.refresh;
+    EQE.Checklist.init();
     const pda = EQE.Pda.init(document.getElementById("panel-pda"));
     refreshers.pda = pda.refresh;
     const mutants = EQE.Mutants.init(document.getElementById("panel-mutants"));

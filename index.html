@@ -17,7 +17,10 @@
       <p>Config- &amp; JSON-Editor für den Exodus-Server &mdash; Quests, Handel, Karte, Medizin, Mutanten, Anomalien, PDA &amp; mehr</p>
     </div>
   </div>
+  <div class="topbar-actions">
+  <button class="btn cl-btn" id="checklist-btn" type="button" title="Was muss ich noch hochladen bzw. als PBO neu packen?">&#9745; Checkliste <span class="dl-count" id="cl-count">0</span></button>
   <button class="btn primary dl-changed" id="dl-changed" type="button" title="Alle neuen/geänderten Dateien als ZIP herunterladen">Geänderte Dateien laden <span class="dl-count" id="dl-count">0</span></button>
+  </div>
 </header>
 
 <div class="app">
@@ -101,6 +104,7 @@
         <li><strong>Bearbeiten:</strong> Links in der Navigation den passenden Bereich wählen. Überall gibt es Vorschlagslisten, <span class="tip">?</span>-Erklärungen und &mdash; wo es Sinn macht &mdash; Live-Berechnungen. Änderungen werden sofort im Browser zwischengespeichert.</li>
         <li><strong>Prüfen:</strong> „Alles prüfen“ im Tab <em>Dateien &amp; Export</em> testet jede Datei und alle Verweise untereinander.</li>
         <li><strong>Speichern:</strong> Oben rechts „Änderungen speichern“ (Chrome/Edge) schreibt direkt in deinen Projektordner, sonst gibt es ein ZIP mit nur dem Geänderten.</li>
+        <li><strong>Nichts vergessen:</strong> Der Knopf <em>Checkliste</em> links daneben merkt sich über die ganze Sitzung, welche JSON-Dateien du hochladen und welche PBOs du neu packen musst. Abhaken, was erledigt ist &mdash; die Liste bleibt auch nach dem Speichern erhalten.</li>
       </ol>
       <div class="issue ok">Nichts wird hochgeladen &mdash; alles läuft lokal im Browser. Der Browser-Speicher ist nur ein Zwischenspeicher: speichere regelmäßig in deinen Ordner oder als ZIP.</div>
 
@@ -197,6 +201,7 @@
 <script src="js/mutants.js"></script>
 <script src="js/exo.js"></script>
 <script src="js/pda.js"></script>
+<script src="js/checklist.js"></script>
 <script src="js/gasmask.js"></script>
 <script src="js/overview.js"></script>
 <script src="js/main.js"></script>
