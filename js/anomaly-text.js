@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Anomalien, Detektoren, Artefakte: deutsche Namen und Erklärungen.
+ * Exodus Editor – Anomalien, Detektoren, Artefakte: deutsche Namen und Erklärungen.
  * Für diese Mods lag keine Doku vor – die Erklärungen sind aus den Wertenamen und den Beispieldateien abgeleitet
  * und mit „vermutlich“ markiert, wo die Bedeutung nicht eindeutig ist.
  */

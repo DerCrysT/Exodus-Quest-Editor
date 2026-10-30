@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Exoskelett-Editor (XCP_EXO_Override): die fünf Basisklassen XCP_EXO_BASE_* (Helm, Oberteil, Hose,
+ * Exodus Editor – Exoskelett-Editor (XCP_EXO_Override): die fünf Basisklassen XCP_EXO_BASE_* (Helm, Oberteil, Hose,
  * Handschuhe, Stiefel), von denen alle Fraktions-Anzüge (Exodus_Exo_*) erben, sowie die Sprung-Faktoren aus dem Skript.
  * Schreibt config.cpp und Skript als Quellordner zurück (PBO danach von Hand packen).
  */

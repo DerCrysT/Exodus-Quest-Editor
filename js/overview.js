@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Projekt-Tab (Dateien laden, Liste, Gesamtprüfung, ZIP-Export) und NPC-Übersicht.
+ * Exodus Editor – Projekt-Tab (Dateien laden, Liste, Gesamtprüfung, ZIP-Export) und NPC-Übersicht.
  */
 window.EQE = window.EQE || {};
 

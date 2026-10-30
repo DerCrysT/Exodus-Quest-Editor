@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – gemeinsame Hilfen für Editoren, die Config-Bäume (aus config.cpp / config.bin / PBO) bearbeiten
+ * Exodus Editor – gemeinsame Hilfen für Editoren, die Config-Bäume (aus config.cpp / config.bin / PBO) bearbeiten
  * und als config.cpp zurückschreiben (Mutanten-Editor, Exoskelett-Editor).
  * Die Bäume werden aus der Config-Registry KOPIERT, damit das Override-Werkzeug unberührt bleibt.
  */

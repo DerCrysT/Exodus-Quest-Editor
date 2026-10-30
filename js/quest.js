@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Quest-Editor (Quest/*.json).
+ * Exodus Editor – Quest-Editor (Quest/*.json).
  */
 window.EQE = window.EQE || {};
 

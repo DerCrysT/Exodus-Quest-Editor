@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Radiation-Editor (Radiation-Mod): GeneralSetting.json, BombingTrim.json sowie die Tabellen
+ * Exodus Editor – Radiation-Editor (Radiation-Mod): GeneralSetting.json, BombingTrim.json sowie die Tabellen
  * (Strahlungszonen, Wrack-Zonen, Schutz-Ausrüstung, Filter). Aufbau wie der MedPlus-Editor: „?“-Erklärungen und Live-Berechnungen.
  * Änderungen laufen über den Projekt-Store und werden beim Speichern in die JSON-Dateien geschrieben.
  */

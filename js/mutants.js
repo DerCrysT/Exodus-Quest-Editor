@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Mutanten-Editor (XCP_SFP_Mutanten_HP): je Mutant drei Varianten XCP_T1/T2/T3_<Klasse>
+ * Exodus Editor – Mutanten-Editor (XCP_SFP_Mutanten_HP): je Mutant drei Varianten XCP_T1/T2/T3_<Klasse>
  * mit eigenen Lebenspunkten und Beute (Skinning). Liest die Configs aus der PBO (config.bin) oder dem Quellordner
  * und schreibt geänderte Configs als config.cpp-Quellordner zurück (die PBO wird danach von Hand gepackt).
  */

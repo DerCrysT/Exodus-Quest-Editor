@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Anomalien, Detektoren & Artefakt-Effekte.
+ * Exodus Editor – Anomalien, Detektoren & Artefakt-Effekte.
  * Dateien: StalkerAnomalyUnifiedBalance, AnomalyTriggerSettings, AnomalySpawn, DetectorSettings, AutoReload,
  * StalkerAnomalyTeleport sowie ArtEFX, ArtEFXMedPlus, ArtEFXTimer. Aufbau wie MedPlus/Radiation:
  * „?“-Erklärungen und Live-Berechnungen; Änderungen laufen über den Projekt-Store und werden zurückgeschrieben.

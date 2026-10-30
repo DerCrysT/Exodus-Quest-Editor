@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – NPC-Editor (NPC/*.json).
+ * Exodus Editor – NPC-Editor (NPC/*.json).
  */
 window.EQE = window.EQE || {};
 

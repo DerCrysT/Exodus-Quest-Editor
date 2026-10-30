@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Datentabellen: Objective-Parameter je Typ, Belohnungstypen, Ruf-Ränge.
+ * Exodus Editor – Datentabellen: Objective-Parameter je Typ, Belohnungstypen, Ruf-Ränge.
  * Quelle: scripts/4_World/Objectives/*.c (Doc-Kommentare) und scripts/3_Game/EQ_Data_Reputation.c im Mod-Repo.
  */
 window.EQE = window.EQE || {};

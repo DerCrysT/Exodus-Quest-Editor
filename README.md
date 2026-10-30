@@ -1,4 +1,4 @@
-# Exodus Quest Editor
+# Exodus Editor
 
 Browser-Tool zum Erstellen und Bearbeiten der JSON-Dateien von **ExodusQuests** (DayZ-Mod, DayZone):
 Quests, NPCs, Dialoge und Stashes. Läuft komplett im Browser, keine Installation, kein Server, kein Build-Schritt.

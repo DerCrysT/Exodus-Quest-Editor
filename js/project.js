@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Projekt: alle geladenen/erstellten JSON-Dateien (Quest, NPC, Dialog, Stash) an einem Ort.
+ * Exodus Editor – Projekt: alle geladenen/erstellten JSON-Dateien (Quest, NPC, Dialog, Stash) an einem Ort.
  * - erkennt den Dateityp automatisch an der Struktur
  * - hält Verweise zwischen den Dateien konsistent (Umbenennen zieht Referenzen mit)
  * - prüft Verweise projektweit (crossCheck)

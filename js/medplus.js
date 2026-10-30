@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – MedPlus-Editor (Medizin-Mod): MedPlusTrim.json sowie die Tabellen-Dateien
+ * Exodus Editor – MedPlus-Editor (Medizin-Mod): MedPlusTrim.json sowie die Tabellen-Dateien
  * (Zombie-/Tier-Schaden, Klingen, Munition, Getränke, Suppen-Zutaten). Mit Erklärungen („?“) und Live-Berechnungen.
  * Änderungen laufen über den Projekt-Store und werden – wie bei Dialogen/Tradern – beim Speichern in die JSON-Dateien geschrieben.
  */

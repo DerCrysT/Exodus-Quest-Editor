@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – binarisierte Configs (config.bin, "rapified") und PBO-Archive lesen.
+ * Exodus Editor – binarisierte Configs (config.bin, "rapified") und PBO-Archive lesen.
  * parseRap(buffer)  -> Klassenbaum im gleichen Format wie EQE.Cfg.parse (props/children/base/forward)
  * readPbo(file)     -> [{name, buffer}] aller config.bin / config.cpp im Archiv (liest nur Header + diese Einträge)
  */

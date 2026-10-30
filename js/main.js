@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Tab-Umschaltung, globales Drag&Drop und Start.
+ * Exodus Editor – Tab-Umschaltung, globales Drag&Drop und Start.
  */
 (function () {
   "use strict";
@@ -137,13 +137,7 @@
       if (ev.type === "ingest") switchTab("project");
     });
 
-    let startTab = "project";
-    try {
-      startTab = localStorage.getItem(TAB_KEY) || "project";
-    } catch (e) {
-      /* egal */
-    }
-    if (!document.getElementById("panel-" + startTab)) startTab = "project";
-    switchTab(startTab);
+    // Beim Öffnen/Neuladen immer im Tab "Dateien & Export" starten (die Dateien müssen ohnehin neu geladen werden)
+    switchTab("project");
   });
 })();

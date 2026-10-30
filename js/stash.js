@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Stash-Editor (Stash/*.json).
+ * Exodus Editor – Stash-Editor (Stash/*.json).
  */
 window.EQE = window.EQE || {};
 

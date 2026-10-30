@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – PDA-Editor: Fraktionen (Fraktionsleader.json: Spawn, Mitgliederlimit, Start-Ausrüstung, Avatar-Gruppen)
+ * Exodus Editor – PDA-Editor: Fraktionen (Fraktionsleader.json: Spawn, Mitgliederlimit, Start-Ausrüstung, Avatar-Gruppen)
  * und Loner-Spawn (LonerSpawn.json: Spawn-Position, Standard-Kit und Premium-Kits mit verschachtelter Ausrüstung).
  * Aufbau wie die anderen Editoren: „?“-Erklärungen, Live-Prüfungen, Zurückschreiben der JSON-Dateien.
  */

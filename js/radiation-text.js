@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Radiation-Mod: deutsche Titel, Abschnittsbeschreibungen und Wert-Erklärungen.
+ * Exodus Editor – Radiation-Mod: deutsche Titel, Abschnittsbeschreibungen und Wert-Erklärungen.
  * Basis ist die Mod-Dokumentation („Radiation Mod explanation.txt“, wird zitiert); der Mod-Code ist nicht einsehbar,
  * deshalb steht bei Ableitungen „vermutlich“.
  */

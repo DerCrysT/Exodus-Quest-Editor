@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Trader-Editoren für XCP_Trader_V2:
+ * Exodus Editor – Trader-Editoren für XCP_Trader_V2:
  *   Trader (ein Eintrag der Traders_list.json), Handelskategorien (trader_category_list/*.json),
  *   Tauschkategorien (barter_category_list/*.json).
  */

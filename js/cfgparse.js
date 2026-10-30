@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – config.cpp einlesen (Parser, Klassen-Register, Vererbung, Kategorisierung).
+ * Exodus Editor – config.cpp einlesen (Parser, Klassen-Register, Vererbung, Kategorisierung).
  * Liest die Textform von DayZ-Configs (keine binarisierten config.bin). Das Register führt alle geladenen config.cpp zusammen,
  * löst Vererbung auf ("geerbter" Wert einer Eigenschaft) und sortiert Klassen vor (Kleidung nach Slot, Essen, Waffen, …).
  */

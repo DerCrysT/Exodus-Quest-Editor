@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – MedPlus: deutsche Titel, Abschnittsbeschreibungen und Wert-Erklärungen.
+ * Exodus Editor – MedPlus: deutsche Titel, Abschnittsbeschreibungen und Wert-Erklärungen.
  * Die Erklärungen sind aus den Wertenamen und den Beispieldateien abgeleitet (der Mod-Code ist nicht einsehbar);
  * wo die Bedeutung nicht eindeutig ist, steht "vermutlich".
  */

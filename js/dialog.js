@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Dialog-Editor (Dialog/*.json).
+ * Exodus Editor – Dialog-Editor (Dialog/*.json).
  */
 window.EQE = window.EQE || {};
 

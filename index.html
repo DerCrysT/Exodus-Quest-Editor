@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exodus Quest Editor</title>
-<meta name="description" content="Browser-Tool zum Erstellen von Quest-, NPC-, Dialog- und Stash-JSONs für den DayZ-Mod ExodusQuests.">
+<title>Exodus Editor</title>
+<meta name="description" content="Browser-Editor für den Exodus-DayZ-Server: Quests, NPCs, Dialoge, Trader, Medizin, Radiation, Mutanten, Anomalien, PDA und Overrides.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%230b0f0c%22/><text x=%2216%22 y=%2222%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22%23d9a359%22 font-family=%22Georgia,serif%22>E</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -13,8 +13,8 @@
   <div class="brand">
     <span class="brand-mark">E</span>
     <div>
-      <h1>Exodus Quest Editor</h1>
-      <p>JSON-Editor für <code>ExodusQuests</code> &mdash; Quests, NPCs, Dialoge, Stashes, Trader &amp; Karte</p>
+      <h1>Exodus Editor</h1>
+      <p>Config- &amp; JSON-Editor für den Exodus-Server &mdash; Quests, Handel, Karte, Medizin, Mutanten, Anomalien, PDA &amp; mehr</p>
     </div>
   </div>
   <button class="btn primary dl-changed" id="dl-changed" type="button" title="Alle neuen/geänderten Dateien als ZIP herunterladen">Geänderte Dateien laden <span class="dl-count" id="dl-count">0</span></button>
@@ -95,71 +95,60 @@
 
   <section class="panel" id="panel-help">
     <div class="help-page">
-      <h2>So arbeitest du am besten</h2>
+      <h2>Erste Schritte</h2>
       <ol>
-        <li><strong>Projekt laden:</strong> Im Tab <em>Projekt</em> den Ordner deines <code>ExodusQuests</code>-Profils auswählen (oder per Drag&amp;Drop
-            Ordner/Dateien hineinziehen). Das Tool erkennt selbst, was Quest, NPC, Dialog und Stash ist.</li>
-        <li><strong>Bearbeiten:</strong> In den Editor-Tabs wählst du oben die Datei aus. Alle IDs (NPCs, Quests, Stashes, Dialoge &hellip;) bekommst
-            du als Vorschlagsliste &mdash; nichts muss mehr abgetippt werden. Änderungen werden sofort gespeichert (im Browser).</li>
-        <li><strong>Zuweisen:</strong> Quests und Dialoge weist du direkt in ihrem Formular dem NPC zu (Abschnitt „Zuweisung an NPCs“). Im Dialog-Tab
-            wählst du zuerst den NPC &mdash; „Neu“ legt dann einen Dialog für genau diesen NPC an.</li>
-        <li><strong>Prüfen:</strong> „Alles prüfen“ im Projekt-Tab testet jede Datei und alle Verweise untereinander (unbekannte NPCs, Stashes, Dialoge &hellip;).</li>
-        <li><strong>Exportieren:</strong> „ZIP: nur Geändertes“ liefert genau die Dateien, die du verändert oder neu angelegt hast, in der
-            Ordnerstruktur <code>Quest/ NPC/ Dialog/ Stash/</code> &mdash; einfach ins Server-Profil kopieren.<br>Mit <em>In Projektordner speichern&hellip;</em> (Chrome/Edge) werden Änderungen direkt in deinen Projektordner geschrieben und im Tool gelöschte Dateien dort
-            auch gelöscht. Das ZIP enthält dafür <code>_loeschen.bat</code>.</li>
+        <li><strong>Laden:</strong> Beim Start bist du im Tab <em>Dateien &amp; Export</em>. Wähle dort deinen Projektordner (oder ziehe Ordner/Dateien per Drag&amp;Drop hinein). Das Tool erkennt selbst, was Quest, NPC, Dialog, Trader, MedPlus, Radiation, Anomalie, PDA &hellip; ist. Auch <code>config.cpp</code>, <code>config.bin</code> und <code>.pbo</code>-Dateien werden gelesen.</li>
+        <li><strong>Bearbeiten:</strong> Links in der Navigation den passenden Bereich wählen. Überall gibt es Vorschlagslisten, <span class="tip">?</span>-Erklärungen und &mdash; wo es Sinn macht &mdash; Live-Berechnungen. Änderungen werden sofort im Browser zwischengespeichert.</li>
+        <li><strong>Prüfen:</strong> „Alles prüfen“ im Tab <em>Dateien &amp; Export</em> testet jede Datei und alle Verweise untereinander.</li>
+        <li><strong>Speichern:</strong> Oben rechts „Änderungen speichern“ (Chrome/Edge) schreibt direkt in deinen Projektordner, sonst gibt es ein ZIP mit nur dem Geänderten.</li>
       </ol>
-      <h2>Ingame-Vorschau (Dialog)</h2>
-      <p>Im Dialog-Tab zeigt „Ingame-Vorschau“ das Gesprächsfenster wie im Spiel. Du kannst den Spieler-Rang bei dem NPC (und bei anderen NPCs), offene
-         Rückgaben und den Spielernamen einstellen und das Gespräch durchklicken &mdash; Ruf-Bedingungen, <code>Requires</code>, <code>@quests</code>,
-         <code>@trade</code> und die Themenliste verhalten sich wie auf dem Server.</p>
-      <h2>Trader (XCP_Trader_V2) &amp; Karte</h2>
-      <p>Im Bereich <em>Handel</em> bearbeitest du Trader (Einträge der <code>Traders_list.json</code>), Handelskategorien
-         (<code>trader_category_list/*.json</code>) und Tauschkategorien (<code>barter_category_list/*.json</code>). Beim Laden eines
-         Projektordners wird die <code>Traders_list.json</code> automatisch in einzelne Trader aufgeteilt und beim Export wieder zusammengefügt.
-         Die Kategorie-ID ist der Dateiname &mdash; so tragen die Trader sie ein; beim Umbenennen ziehen die Trader mit. Mit „2 m neben diesen NPC setzen“
-         stellst du einen Trader neben den Dialog-NPC (wichtig für <code>@trade</code>: der Trader-Mod erlaubt höchstens 8 m).</p>
-      <p>Die <em>Interaktive Karte</em> lädt immer die DayZone-Karte und zeigt NPCs, Trader, Quest-Ziele, Spawn-Gruppen und Stashes deines Projekts als
-         Marker (Doppelklick öffnet den Eintrag im Editor). Liegen Zones-, Tiers-, Radiation- oder Anomalies-JSONs im Projektordner, werden sie
-         automatisch in der Karte angezeigt.</p>
-      <h2>Overrides (config.cpp)</h2>
-      <p>Im Bereich <em>Config → Overrides</em> lädst du <code>config.cpp</code>, <code>config.bin</code> oder ganze <code>.pbo</code>-Dateien (aus dem Projektordner oder z.&nbsp;B. <code>DayZServer/addons</code> für die Vanilla-Basisklassen; aus PBOs wird nur die Config gelesen). Das Tool sortiert alle Klassen vor
-         (Kleidung nach Slot, Essen &amp; Trinken, Waffen, Magazine, Munition …). Du klickst eine Klasse an und änderst Größe, Cargo, Schutz, Haltbarkeit, Nährwerte u.&nbsp;v.&nbsp;m. &mdash; per Zahlenfeld, Dropdown oder Häkchen.
-         Mit den Häkchen in der Liste kannst du mehrere Klassen markieren und Werte für alle auf einmal setzen oder umrechnen (z.&nbsp;B. Schutz ×&nbsp;0,8).</p>
-      <p>Gespeichert wird nur, was du geändert hast, in <code>Exodus_Overrides/Exodus_Overrides/config.cpp</code> (mit <code>$PBOPREFIX$.txt</code>) &mdash; der Ordner wird im Projektordner angelegt, falls er fehlt, sonst wird die vorhandene Datei weiterbearbeitet.
-         Texturen (paa/rvmat) werden bewusst ignoriert. Danach den Ordner <code>Exodus_Overrides/Exodus_Overrides</code> als PBO packen.</p>
-      <h2>MedPlus</h2>
-      <p>Im Bereich <em>Medizin &rarr; MedPlus</em> bearbeitest du die JSON-Dateien des Medizin-Mods MedPlus. Lade den MedPlus-Ordner (Knopf oben im Tab). Links wählst du ein Thema (z.&nbsp;B. Gehirnerschütterung, Schusswunden, Betrunkenheit),
-         rechts stehen die Werte mit <span class="tip">?</span>-Erklärung und eine <strong>Live-Berechnung</strong>, die sich bei jeder Änderung aktualisiert (etwa: wie schnell man verblutet, wie viel eine Suppe über ihre Dauer heilt).
-         Die Tabellen (Zombies, Tiere, Klingen, Munition, Getränke) lassen sich durchsuchen, ergänzen und duplizieren. „Änderungen speichern“ schreibt die Dateien zurück.</p>
-      <h2>PDA</h2>
-      <p>Der Tab <em>PDA</em> bearbeitet <code>Fraktionsleader.json</code> (Fraktionen mit Leader, Spawn, Mitgliederlimit, Start-Ausrüstung, Avatar-Gruppen) und <code>LonerSpawn.json</code> (Spawn-Position, Standard-Kit und Premium-Kits mit verschachtelter Ausrüstung).
-         Mit geladenen Vanilla-/Mod-Configs gibt es Klassennamen-Vorschläge, Slot-Anzeige und Warnungen bei unbekannten Klassen oder doppelten Slots.</p>
-      <h2>Mutanten &amp; Exoskelette</h2>
-      <p>Lade die <code>XCP_SFP_Addon.pbo</code> (oder den Quellordner). Der Tab <em>Mutanten</em> zeigt je Mutant die drei Stufen T1/T2/T3 mit Lebenspunkten, Treffer-Rechnung, Beute und einem Faktor-Werkzeug (T2/T3 als Vielfaches von T1).
-         Der Tab <em>Exoskelette</em> bearbeitet die fünf Basisteile (Gewicht, Größe, Haltbarkeit, Rüstung) und die Sprung-Faktoren aus dem Skript. Gespeichert werden nur geänderte Configs/Skripte als Quellordner (<code>config.cpp</code>) &mdash; die PBO packst du danach selbst. Mit den geladenen SFP-PBOs zeigt der Mutanten-Tab zusätzlich Rüstung je Trefferzone und den Schaden der Angriffe; geänderte Werte landen in der Override-Config (Schaden über eigene Ammo-Klone je Variante und Stufe).</p>
-      <h2>Anomalien, Detektoren &amp; Artefakte</h2>
-      <p>Der Bereich <em>Anomalien &rarr; Anomalien &amp; Artefakte</em> bearbeitet die Ordner <em>Anomaly &amp; Detectoren</em> und <em>Artefakt EFX</em>: Schaden und Sonder-Effekte jeder Anomalie (Balance), Auslöser-Listen, Spawn-Einstellungen,
-         Reichweite und Winkel der Detektoren, Neuladen, Teleport-Ziele sowie die Wirkung jedes Artefakts (Basis + MedPlus) mit dem zentralen Takt. Es gibt „?“-Erklärungen und Live-Rechnungen (Treffer bis zum Tod,
-         Erfassungsfläche, Effekt pro Minute, Zeit bis leer). Mangels Doku sind die Erklärungen aus den Wertenamen abgeleitet. „Änderungen speichern“ schreibt die Dateien zurück.</p>
-      <h2>Radiation</h2>
-      <p>Im Bereich <em>Medizin &rarr; Radiation</em> bearbeitest du die JSON-Dateien des Radiation-Mods: Strahlenkrankheit, Schutz und Heilung, Bombardement (inklusive der drei Panel-Bomben) sowie die Tabellen mit
-         Strahlungszonen, Wrack-Zonen, Schutz-Ausrüstung und Filtern. Wie bei MedPlus gibt es „?“-Erklärungen (mit Zitat aus der Mod-Doku) und Live-Berechnungen &mdash; z.&nbsp;B. nach wie vielen Sekunden man in einer Zone Stufe 1 bzw. den kritischen Wert erreicht.
-         Die „Zonen-Übersicht“ listet alle Zonen nach Gefahr. „Änderungen speichern“ schreibt die Dateien zurück.</p>
-      <h2>Gasmasken (Exodus_GM)</h2>
-      <p>Im Bereich <em>Medizin &rarr; Gasmasken</em> lädst du die <code>Exodus_GM.pbo</code> (oder einen Ordner, der sie enthält) und passt Masken und Filter an oder legst neue an. Unter „Slot-Locks“ bestimmst du, welche Slots eine Maske sperrt
-         (gegen Clipping/Spielvorteile) und welche Filter-Slots der Radiation-Mod erkennt. Gespeichert wird der Mod-Ordner <code>Exodus_GM</code> mit <code>config.cpp</code> und den Skripten &mdash; den innersten Ordner danach als PBO packen.</p>
-      <h2>Hinweise</h2>
+      <div class="issue ok">Nichts wird hochgeladen &mdash; alles läuft lokal im Browser. Der Browser-Speicher ist nur ein Zwischenspeicher: speichere regelmäßig in deinen Ordner oder als ZIP.</div>
+
+      <h2>Was wird wie gespeichert?</h2>
+      <table class="ptable">
+        <thead><tr><th>Bereich</th><th>Geschrieben wird</th><th>Danach</th></tr></thead>
+        <tbody>
+          <tr><td>Quests, NPCs, Dialoge, Stashes, Trader, MedPlus, Radiation, Anomalien, Artefakte, PDA</td><td>die JSON-Dateien im Projektordner (nur Geändertes)</td><td>ins Server-Profil kopieren</td></tr>
+          <tr><td>Overrides</td><td><code>Exodus_Overrides/Exodus_Overrides/config.cpp</code></td><td>Ordner als PBO packen</td></tr>
+          <tr><td>Gasmasken</td><td><code>Exodus_GM</code> mit config.cpp und Skripten</td><td>Ordner als PBO packen</td></tr>
+          <tr><td>Mutanten, Exoskelette</td><td>geänderte <code>config.cpp</code> (und Sprung-Skript) als Quellordner</td><td>in den Quellordner kopieren, PBO packen</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Quests &amp; NPCs</h2>
+      <p>Quests, NPCs, Dialoge und Stashes bearbeitest du in ihren Tabs: oben die Datei wählen, alle IDs kommen als Vorschlagsliste. Quests und Dialoge weist du direkt im Formular dem NPC zu („Zuweisung an NPCs“); im Dialog-Tab wählst du zuerst den NPC, „Neu“ legt dann einen Dialog für genau diesen NPC an.
+         Wird eine ID umbenannt, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests, Dialog-Sprünge, Ruf-Bereiche &hellip;). Die <em>Ingame-Vorschau</em> im Dialog-Tab zeigt das Gespräch wie im Spiel &mdash; mit Rang, offenen Rückgaben und Spielernamen einstellbar.</p>
       <ul>
-        <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash;
-            das ist <em>keine</em> ODER-Quest, sondern eine Sammelmenge.</li>
-        <li><code>TargetValue</code> bedeutet je Objective etwas anderes (Survive = Sekunden, Explore = automatisch). Fahr mit der Maus über das
-            <span class="tip">?</span> am Feld.</li>
-        <li>Rangnamen: Brother in Arms, Ally, Friend, Associate, Acquaintance, Neutral, Suspicious, Disliked, Enemy, Wanted, Execution Target.
-            <code>Min</code>/<code>Max</code> = 0 gelten dem Spiel als „nicht gesetzt“ &mdash; für „bis 0“ bitte <code>MaxRank</code> „Neutral“ nutzen.</li>
-        <li>Wird eine ID umbenannt, ziehen Verweise in anderen Dateien automatisch mit (NPC-Listen, PreQuests, Dialog-Sprünge, Ruf-Bereiche &hellip;).</li>
-        <li>Nichts wird hochgeladen &mdash; alles läuft lokal im Browser. Der Browser-Speicher ist nur ein Zwischenspeicher: sichere regelmäßig per ZIP.</li>
+        <li>Komma-getrennte Klassenlisten (z.&nbsp;B. <code>TargetClass</code>, <code>ItemClass</code>) zählen laut Mod gemeinsam zur selben Anzahl &mdash; das ist <em>keine</em> ODER-Quest, sondern eine Sammelmenge.</li>
+        <li><code>TargetValue</code> bedeutet je Objective etwas anderes (Survive = Sekunden, Explore = automatisch) &mdash; siehe <span class="tip">?</span> am Feld.</li>
+        <li>Rangnamen: Brother in Arms, Ally, Friend, Associate, Acquaintance, Neutral, Suspicious, Disliked, Enemy, Wanted, Execution Target. <code>Min</code>/<code>Max</code> = 0 gelten dem Spiel als „nicht gesetzt“ &mdash; für „bis 0“ bitte <code>MaxRank</code> „Neutral“ nutzen.</li>
         <li>Im Zweifel zählen die Schemas <code>docs/schemas/*.json</code> im Mod-Repo.</li>
       </ul>
+
+      <h2>Handel &amp; Karte</h2>
+      <p>Im Bereich <em>Handel</em> bearbeitest du Trader (<code>Traders_list.json</code>, wird beim Laden in einzelne Trader aufgeteilt und beim Export wieder zusammengefügt), Handelskategorien (<code>trader_category_list/*.json</code>) und Tauschkategorien (<code>barter_category_list/*.json</code>). Die Kategorie-ID ist der Dateiname; beim Umbenennen ziehen die Trader mit.
+         Mit „2 m neben diesen NPC setzen“ stellst du einen Trader neben den Dialog-NPC (wichtig für <code>@trade</code>: der Trader-Mod erlaubt höchstens 8 m).</p>
+      <p>Die <em>Interaktive Karte</em> zeigt NPCs, Trader, Quest-Ziele, Spawn-Gruppen und Stashes als Marker (Doppelklick öffnet den Eintrag im Editor). Zones-, Tiers-, Radiation- und Anomalies-JSONs erscheinen automatisch.</p>
+
+      <h2>Medizin: MedPlus, Radiation, Gasmasken</h2>
+      <p><strong>MedPlus</strong> und <strong>Radiation</strong> haben denselben Aufbau: links ein Thema wählen, rechts die Werte mit <span class="tip">?</span>-Erklärung und einer <strong>Live-Berechnung</strong> (z.&nbsp;B. wie schnell man verblutet, wie viel eine Suppe heilt, nach welcher Zeit man in einer Zone Stufe 1 erreicht). Tabellen (Zombies, Tiere, Klingen, Munition, Getränke, Zonen, Schutz-Ausrüstung, Filter) lassen sich durchsuchen, ergänzen und duplizieren.</p>
+      <p><strong>Gasmasken</strong> (Exodus_GM): <code>Exodus_GM.pbo</code> laden, Masken und Filter anpassen oder neu anlegen. Unter „Slot-Locks“ bestimmst du, welche Slots eine Maske sperrt und welche Filter-Slots der Radiation-Mod erkennt. Gespeichert wird der Mod-Ordner <code>Exodus_GM</code> &mdash; den innersten Ordner danach als PBO packen.</p>
+
+      <h2>Mutanten &amp; Exoskelette</h2>
+      <p>Lade die <code>XCP_SFP_Addon.pbo</code> (oder den Quellordner) &mdash; für Original-Werte zusätzlich die SFP-PBOs und die Vanilla-Melee-PBOs aus <code>DayZ/addons</code>.</p>
+      <ul>
+        <li><strong>Mutanten:</strong> je Mutant die Stufen T1/T2/T3 mit Lebenspunkten, Treffer-Rechnung je Waffentyp (Vanilla-Schaden), Rüstung je Trefferzone, Angriffsschaden, Beute beim Ausnehmen (inkl. Hinzufügen/Entfernen) und ein Faktor-Werkzeug (T2/T3 als Vielfaches von T1, auch für den Schaden). Schaden wird über eigene Ammo-Klone in der Override-Config geändert.</li>
+        <li><strong>Exoskelette:</strong> die fünf Basisteile (Gewicht, Größe, Haltbarkeit, Rüstung), Anzug-Übersicht, Fraktions-Anzüge und die Sprung-Faktoren aus dem Skript.</li>
+      </ul>
+
+      <h2>Anomalien, Detektoren &amp; Artefakte</h2>
+      <p>Bearbeitet die Ordner <em>Anomaly &amp; Detectoren</em> und <em>Artefakt EFX</em>: Schaden und Sonder-Effekte jeder Anomalie, Auslöser, Spawn, Reichweite und Winkel der Detektoren, Neuladen, Teleport-Ziele sowie die Wirkung jedes Artefakts (Basis + MedPlus) mit dem zentralen Takt. Live-Rechnungen: Treffer bis zum Tod, Erfassungsfläche, Effekt pro Minute, Zeit bis leer. Mangels Doku sind die Erklärungen aus den Wertenamen abgeleitet.</p>
+
+      <h2>Config: Overrides &amp; PDA</h2>
+      <p><strong>Overrides:</strong> <code>config.cpp</code>, <code>config.bin</code> oder <code>.pbo</code>-Dateien laden (aus dem Projektordner oder z.&nbsp;B. <code>DayZServer/addons</code> für Vanilla-Basisklassen). Das Tool sortiert alle Klassen vor (Kleidung nach Slot, Essen &amp; Trinken, Waffen, Magazine, Munition &hellip;). Klasse anklicken und Größe, Cargo, Schutz, Haltbarkeit, Nährwerte u.&nbsp;v.&nbsp;m. ändern; mit Häkchen mehrere Klassen auf einmal bearbeiten (z.&nbsp;B. Schutz &times;&nbsp;0,8).
+         Gespeichert wird nur, was du geändert hast, in <code>Exodus_Overrides/Exodus_Overrides/config.cpp</code> (mit <code>$PBOPREFIX$.txt</code>). Texturen (paa/rvmat) werden bewusst ignoriert.</p>
+      <p><strong>PDA:</strong> <code>Fraktionsleader.json</code> (Fraktionen mit Leader, Spawn, Mitgliederlimit, Start-Ausrüstung, Avatar-Gruppen) und <code>LonerSpawn.json</code> (Spawn, Standard-Kit und Premium-Kits mit verschachtelter Ausrüstung). Mit geladenen Configs gibt es Klassenvorschläge, Slot-Anzeige und Warnungen.</p>
+
       <h2>Quelle</h2>
       <p>Repository: <a href="https://github.com/DerCrysT/Exodus-Quest-Editor" target="_blank" rel="noopener">github.com/DerCrysT/Exodus-Quest-Editor</a></p>
     </div>

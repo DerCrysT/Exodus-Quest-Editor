@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Karten-Tab: bettet die interaktive DayZone-Karte (Ordner map/) als Fenster ein.
+ * Exodus Editor – Karten-Tab: bettet die interaktive DayZone-Karte (Ordner map/) als Fenster ein.
  * Die Karte lädt standardmäßig immer die mitgelieferte DayZone-Karte. Aus dem Projekt bekommt sie:
  *  - Zones/Tiers/Radiation/Anomalies-JSONs (Mutanten, Strahlung, Anomalien)
  *  - Marker: NPCs, Trader, Quest-Ziele (Explore/Survive/Recovery/Kill/Action), Spawn-Gruppen, Stashes

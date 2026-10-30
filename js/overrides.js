@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Override-Tool: config.cpp einlesen, Items kategorisieren, Werte ändern und eine DayZ-konforme
+ * Exodus Editor – Override-Tool: config.cpp einlesen, Items kategorisieren, Werte ändern und eine DayZ-konforme
  * Override-Config (Exodus_Overrides) erzeugen, die NUR die geänderten Werte enthält.
  */
 (function (EQE) {
@@ -453,7 +453,7 @@
       .sort();
     if (!keys.length) return "";
     const out = [];
-    out.push("// Exodus Quest Editor – Override-Config. Enthält nur die geänderten Werte; alles andere kommt aus den Original-Configs.");
+    out.push("// Exodus Editor – Override-Config. Enthält nur die geänderten Werte; alles andere kommt aus den Original-Configs.");
     if (!onlyKey) {
       out.push("class CfgPatches");
       out.push("{");

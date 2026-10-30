@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Editor-Gerüst. Jeder Editor (Quest/NPC/Dialog/Stash) liefert nur sein Formular, die
+ * Exodus Editor – Editor-Gerüst. Jeder Editor (Quest/NPC/Dialog/Stash) liefert nur sein Formular, die
  * Umwandlung Daten <-> JSON und die Prüfregeln; Dateiauswahl, Neu/Duplizieren/Löschen, Vorschau, Export,
  * Autosave ins Projekt und Umbenennen mit Referenz-Update übernimmt dieses Gerüst.
  */

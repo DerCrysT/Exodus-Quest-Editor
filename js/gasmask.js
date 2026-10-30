@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – Gasmasken-Editor (Mod Exodus_GM): liest die Exodus_GM-PBO bzw. den Quellordner, bearbeitet Masken und
+ * Exodus Editor – Gasmasken-Editor (Mod Exodus_GM): liest die Exodus_GM-PBO bzw. den Quellordner, bearbeitet Masken und
  * Filter (Werte, neue Klassen), die Slot-Locks und die Filter-Erkennung und schreibt den kompletten Mod-Ordner
  * (config.cpp + Scripts), den du anschließend selbst als PBO packst.
  */

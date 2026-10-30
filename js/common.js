@@ -1,5 +1,5 @@
 /**
- * Exodus Quest Editor – gemeinsame Helfer (DOM-Aufbau, Formularfelder, Listen-Editor, JSON-Vorschau,
+ * Exodus Editor – gemeinsame Helfer (DOM-Aufbau, Formularfelder, Listen-Editor, JSON-Vorschau,
  * Toasts/Modal, Entwurf-Speicherung). Alle Editoren (quest.js/npc.js/dialog.js/stash.js) nutzen diese Bausteine.
  */
 window.EQE = window.EQE || {};
