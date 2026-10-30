@@ -108,7 +108,7 @@ window.EQE = window.EQE || {};
         h("button", { class: "btn danger", type: "button", text: "Projekt leeren", onclick: () => { if (confirm("Alle Dateien aus dem Projekt entfernen? (Deine Dateien auf dem Rechner bleiben unberührt, ungesicherte Änderungen gehen verloren.)")) { pstate.results = null; P().clearAll(); } } }),
       ]);
 
-      const parts = [drop, summaryCards(), actions];
+      const parts = [drop, EQE.GitHub ? EQE.GitHub.card() : null, summaryCards(), actions].filter(Boolean);
 
       const dels = P().pendingDeletes();
       if (dels.length) {

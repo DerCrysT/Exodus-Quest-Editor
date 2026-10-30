@@ -959,6 +959,39 @@ window.EQE = window.EQE || {};
     return { written: okW, deleted: okD, errors };
   }
 
+  // ---------------------------------------------------------------- GitHub-Abgleich (Plan + Abschluss)
+  /** Alles, was ein Push schreiben/löschen müsste (ohne Nebenwirkungen). Pfade enthalten den Wurzelordner. */
+  function repoPlan() {
+    const rootName = projectRootName(null);
+    const writes = items.filter((i) => i.kind !== "trader" && isChanged(i)).map((it) => ({ group: [it], path: targetPath(it), text: exportText(it) }));
+    const traders = byKind("trader");
+    if (traders.length && traders.some(isChanged)) writes.push({ group: traders, path: targetPath(traders[0]), text: JSON.stringify({ Traders: traders.map((t) => t.json) }, null, 2) + "\n" });
+    extras.forEach((x) => x.fileWrites({ rootName: rootName }).forEach((w) => writes.push({ group: [], path: w.path, text: w.text, onDone: w.onDone })));
+    return { rootName: rootName, writes: writes, dels: pendingDeletes() };
+  }
+  /** Nach erfolgreichem Push: Dateien als gespeichert markieren, Löschungen abhaken. */
+  function repoFinish(writes, dels) {
+    writes.forEach((w) => {
+      w.group.forEach((it) => {
+        it.rawText = it.kind === "trader" ? null : w.text;
+        it.isNew = false;
+        it.dirty = false;
+        it.path = w.path;
+      });
+      if (w.onDone) w.onDone();
+    });
+    deleted = deleted.filter((d) => !dels.some((x) => x.path === d.path));
+    persist();
+    emit({ type: "saved" });
+  }
+  /** Eingelesene Dateien (z. B. aus GitHub) wie einen Ordner-Import verarbeiten. */
+  async function ingestEntries(entries) {
+    const r = await readEntries(entries);
+    EQE.toast(summary(r), !KINDS.some((k) => r.counts[k]) && !r.configs);
+    emit({ type: "ingest", result: r });
+    return r;
+  }
+
   function downloadZip(onlyChanged) {
     const r = exportZip(onlyChanged);
     if (!r.count && !r.deletes) {
@@ -1096,6 +1129,10 @@ window.EQE = window.EQE || {};
     exportPath,
     changedCount: () => items.filter(isChanged).length + pendingDeletes().length + extras.reduce((n, x) => n + x.changedCount(), 0),
     registerExtra: (x) => extras.push(x),
+    repoPlan,
+    repoFinish,
+    ingestEntries,
+    rootNameGuess: () => projectRootName(null),
     pendingList,
     registerSerializer: (kinds, fn) => kinds.forEach((k) => (serializers[k] = fn)),
     MP_KINDS: MP_KINDS,

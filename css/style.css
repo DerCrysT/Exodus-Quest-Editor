@@ -171,7 +171,7 @@ main { padding: 16px 20px 60px; min-width: 0; flex: 1; max-width: 1600px; }
 .field label .req { color: var(--danger); margin-left: 3px; }
 .field .help { font-size: 11px; color: var(--text-faint); margin-top: -2px; }
 
-input[type=text], input[type=number], textarea, select {
+input[type=text], input[type=number], input[type=password], input[type=search], textarea, select {
   background: var(--bg-input);
   border: 1px solid var(--border-light);
   color: var(--text);
