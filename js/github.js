@@ -215,6 +215,9 @@
   }
   async function run(fn) {
     if (state.busy) return;
+    // Token direkt aus dem Feld übernehmen (Einfügen/Autofill löst nicht immer ein input-Ereignis aus)
+    const tin = host && host.querySelector("input[type=password]");
+    if (tin && tin.value.trim() && tin.value.trim() !== getToken()) setToken(tin.value.trim());
     state.busy = true;
     refreshButtons();
     try {
@@ -236,7 +239,7 @@
     const box = h("div", { class: "card gh-card" });
     host = box;
     const field = (label, tip, input) => h("div", { class: "field" }, [h("label", {}, [label, EQE.MPKit ? EQE.MPKit.tipNode(tip) : null]), input]);
-    const tokenIn = h("input", { type: "password", value: getToken(), placeholder: "github_pat_… (Fine-grained Token)", autocomplete: "off", oninput: (e) => setToken(e.target.value.trim()) });
+    const tokenIn = h("input", { type: "password", value: getToken(), placeholder: "github_pat_… (Fine-grained Token)", autocomplete: "off", oninput: (e) => setToken(e.target.value.trim()), onchange: (e) => setToken(e.target.value.trim()), onblur: (e) => setToken(e.target.value.trim()) });
     const grid = h("div", { class: "grid2" }, [
       field("Repository", "Besitzer/Name, z. B. DerCrysT/Exodus-Editor-Shared-Files.", h("input", { type: "text", value: cfg.repo, oninput: (e) => ((cfg.repo = e.target.value.trim()), saveCfg()) })),
       field("Branch", "Meist main.", h("input", { type: "text", value: cfg.branch, oninput: (e) => ((cfg.branch = e.target.value.trim()), saveCfg()) })),
