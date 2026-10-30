@@ -26,6 +26,8 @@
     weapon: "ar",
     f2: 1.4,
     f3: 2,
+    d2: 1,
+    d3: 1,
     scope: "fam",
   };
 
@@ -58,8 +60,11 @@
   function hpOf(v, tier) {
     const own = v.tiers[tier] ? C().getNum(C().find(v.tiers[tier], HP_PATH), "hitpoints") : NaN;
     if (Number.isFinite(own)) return own;
-    if (tier !== "1" && v.tiers["1"]) return C().getNum(C().find(v.tiers["1"], HP_PATH), "hitpoints");
-    return NaN;
+    if (tier !== "1" && v.tiers["1"]) {
+      const t1 = C().getNum(C().find(v.tiers["1"], HP_PATH), "hitpoints");
+      if (Number.isFinite(t1)) return t1;
+    }
+    return globalHp(v, tier);
   }
   function setHp(v, tier, val) {
     const node = v.tiers[tier];
@@ -106,7 +111,7 @@
       );
     });
     box.appendChild(h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Familie", "Varianten", "T1 HP", "T2 HP", "T3 HP", ""].map((t) => h("th", { text: t })))]), body])]));
-    box.appendChild(h("div", { class: "muted small", text: "Schaden und Verhalten der Mutanten stehen NICHT in dieser Mod (nur Lebenspunkte und Beute) – sie kommen aus der Original-SFP-Config." }));
+    box.appendChild(h("div", { class: "muted small", text: "Rüstung (Trefferzonen) und Schaden der Angriffe zeigt der Editor aus den Original-SFP-PBOs an (SFP.pbo, SFP2.pbo, SFP3.pbo zusätzlich laden; für Vanilla-Nahkampf-Ammo auch weapons_melee.pbo aus DayZ/addons). Änderungen werden in die Override-Config der Stufe geschrieben." }));
   }
 
   function assumeBar(redraw) {
@@ -252,6 +257,316 @@
         ]),
       ])
     );
+    renderArmor(box, v);
+    renderAttacks(box, v);
+  }
+
+  // ---------------------------------------------------------------- Original-Werte (Registry) + Override
+  const lcs = (s) => String(s).toLowerCase();
+  const unq = (s) => String(s).trim().replace(/^"(.*)"$/, "$1");
+  const origNode = (v) => TIERS.map((t) => v.tiers[t]).find((n) => n && n.base && !/^XCP_T\d_/.test(n.base)) || null;
+  function origEntry(v) {
+    const n = origNode(v);
+    return n && EQE.Cfg ? EQE.Cfg.getEntry("CfgVehicles", n.base) : null;
+  }
+  function parentTier(v, t) {
+    const n = v.tiers[t];
+    const m = n && /^XCP_T(\d)_/.exec(n.base || "");
+    return m && v.tiers[m[1]] ? m[1] : null;
+  }
+  function ownProp(node, path) {
+    const i = path.lastIndexOf("/");
+    const n = i < 0 ? node : C().find(node, path.slice(0, i));
+    return n ? C().prop(n, path.slice(i + 1)) : null;
+  }
+  /** Wert einer Eigenschaft für eine Stufe: eigene Config, dann Eltern-Stufe (T1), dann Original aus der Registry. {raw, items, src} oder null. */
+  function valOf(v, tier, path) {
+    let t = tier;
+    const seen = {};
+    while (t && !seen[t]) {
+      seen[t] = 1;
+      const p = v.tiers[t] ? ownProp(v.tiers[t], path) : null;
+      if (p) return { raw: p.raw, items: p.items, array: p.array, src: "T" + t };
+      t = parentTier(v, t);
+    }
+    const e = origEntry(v);
+    const o = e ? EQE.Cfg.effProp(e, path) : null;
+    return o ? { raw: o.raw, items: o.items, array: o.array, src: "Original" } : null;
+  }
+  function numVal(v, tier, path) {
+    const x = valOf(v, tier, path);
+    const n = x && !x.array ? Number(x.raw) : NaN;
+    return Number.isFinite(n) ? n : NaN;
+  }
+  const globalHp = (v, t) => numVal(v, t, HP_PATH + "/hitpoints");
+
+  /** Alle Pfade (Original + Override) unterhalb von prefix, die auf re passen -> Set der erfassten Gruppen */
+  function collectKeys(v, tier, re) {
+    const out = [];
+    const e = origEntry(v);
+    if (e) EQE.Cfg.effective(e).forEach((val) => re.test(val.path) && out.push(val.path));
+    let t = tier;
+    const seen = {};
+    while (t && !seen[t]) {
+      seen[t] = 1;
+      (function walk(n, p) {
+        (n.props || []).forEach((q) => re.test(p + q.name) && out.push(p + q.name));
+        (n.children || []).forEach((c) => walk(c, p + c.name + "/"));
+      })(v.tiers[t], "");
+      t = parentTier(v, t);
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------- Rüstung
+  function renderArmor(box, v) {
+    const tier = st.tier;
+    const node = v.tiers[tier];
+    const keys = collectKeys(v, tier, /^DamageSystem\/DamageZones\/[^/]+\/ArmorType\/[^/]+\/Health\/damage$/i);
+    const zones = [];
+    const types = [];
+    keys.forEach((k) => {
+      const m = /^DamageSystem\/DamageZones\/([^/]+)\/ArmorType\/([^/]+)\//i.exec(k);
+      if (!zones.some((z) => lcs(z) === lcs(m[1]))) zones.push(m[1]);
+      if (!types.some((x) => lcs(x) === lcs(m[2]))) types.push(m[2]);
+    });
+    types.sort((a, b) => (lcs(a) === "projectile" ? -1 : lcs(b) === "projectile" ? 1 : a.localeCompare(b)));
+    const body = h("tbody");
+    const hp = globalHp(v, tier);
+    const cells = [];
+    const updateHits = () => cells.forEach((fn) => fn());
+    zones.forEach((z) => {
+      const base = "DamageSystem/DamageZones/" + z + "/";
+      const tc = numVal(v, tier, base + "Health/transferToGlobalCoef");
+      const hitsCell = h("td", { class: "small" });
+      cells.push(() => {
+        const a = numVal(v, tier, base + "ArmorType/Projectile/Health/damage");
+        const d = dmgOf();
+        const eff = d * (Number.isFinite(a) ? a : 1) * (Number.isFinite(tc) ? tc : 1);
+        hitsCell.textContent = hp > 0 && eff > 0 ? fmt(Math.ceil(hp / eff), 0) + " Schuss" : "–";
+      });
+      body.appendChild(
+        h("tr", {}, [h("td", { text: z })].concat(
+          types.map((ty) => {
+            const path = base + "ArmorType/" + ty + "/Health/damage";
+            const cur = valOf(v, tier, path);
+            const own = ownProp(node, path);
+            const inp = h("input", { type: "number", step: "any", min: "0", value: cur ? Number(cur.raw) : "", placeholder: "–", style: "width:80px", title: cur ? "Quelle: " + cur.src : "nicht definiert" });
+            if (own) inp.classList.add("ov2-changed-input");
+            inp.addEventListener("input", () => {
+              const n = Number(inp.value);
+              if (inp.value.trim() === "" || !Number.isFinite(n) || n < 0) return;
+              C().setNum(C().ensure(node, path.replace(/\/damage$/, "")), "damage", n);
+              inp.classList.add("ov2-changed-input");
+              touch();
+              updateHits();
+            });
+            return h("td", {}, [inp]);
+          }),
+          [h("td", { class: "small muted", text: Number.isFinite(tc) ? fmt(tc, 2) : "–" }), hitsCell]
+        ))
+      );
+    });
+    updateHits();
+    box.appendChild(
+      h("div", { class: "section" }, [
+        h("div", { class: "section-head" }, ["Rüstung (Trefferzonen) · Stufe T" + tier, tipNode("Schadens-Faktor je Trefferzone und Schadensart: 1 = voller Schaden, 0,1 = nur 10 % (stark gepanzert), 2 = doppelter Schaden (Schwachstelle). Werte aus der Original-Config (SFP-PBO); geänderte Werte schreibt der Editor in die Config dieser Stufe. Leere Zellen = Zone/Art ist nicht definiert.")]),
+        h("div", { class: "section-body" }, [
+          zones.length
+            ? h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Zone"].concat(types.map((t) => t + "-Faktor"), ["Anteil → Gesamt-Leben", "Schuss bis tot (nur diese Zone)"]).map((t) => h("th", { text: t })))]), body])])
+            : h("div", { class: "issue warn", text: "Keine Trefferzonen gefunden. Lade die SFP-PBOs (SFP.pbo, SFP2.pbo, SFP3.pbo) zusätzlich, damit die Original-Werte angezeigt werden können." }),
+          zones.length ? h("div", { class: "help", text: "Orange Felder sind in der Config dieser Stufe gesetzt, die übrigen stammen aus dem Original/T1. „Schuss bis tot“ = Gesamt-Leben ÷ (Waffenschaden × Faktor × Anteil) für den gewählten Waffentyp – vereinfacht, ein Schuss in genau diese Zone." }) : null,
+        ]),
+      ])
+    );
+  }
+
+  // ---------------------------------------------------------------- Angriffe & Schaden
+  const AMMO_DMG = [["Health", "Leben"], ["Blood", "Blut"], ["Shock", "Schock"]];
+  function modelAmmo(v, name) {
+    const ca = C().child(v.model.root, "CfgAmmo");
+    return ca ? ca.children.find((c) => c.name === name && !c.forward) || null : null;
+  }
+  function ammoDamage(v, ammo, key) {
+    const own = modelAmmo(v, ammo);
+    if (own) {
+      const x = C().getNum(C().find(own, "DamageApplied/" + key), "damage");
+      if (Number.isFinite(x)) return x;
+      return ammoDamage(v, own.base, key);
+    }
+    const e = EQE.Cfg ? EQE.Cfg.getEntry("CfgAmmo", ammo) : null;
+    const p = e ? EQE.Cfg.effProp(e, "DamageApplied/" + key + "/damage") : null;
+    const n = p ? Number(p.raw) : NaN;
+    return Number.isFinite(n) ? n : NaN;
+  }
+  /** Kopiert den DamageApplied-Block einer Ammo-Klasse (Override-Klon oder Registry) als Config-Knoten. */
+  function damageAppliedCopy(v, ammo) {
+    const own = modelAmmo(v, ammo);
+    if (own) {
+      const d = C().child(own, "DamageApplied");
+      if (d) return JSON.parse(JSON.stringify(d));
+      return damageAppliedCopy(v, own.base);
+    }
+    const node = { name: "DamageApplied", base: "", props: [], children: [] };
+    const e = EQE.Cfg ? EQE.Cfg.getEntry("CfgAmmo", ammo) : null;
+    if (!e) return node;
+    EQE.Cfg.effective(e).forEach((val) => {
+      const m = /^DamageApplied\/(.+)$/i.exec(val.path);
+      if (!m) return;
+      const parts = m[1].split("/");
+      const pn = parts.pop();
+      const target = parts.length ? C().ensure(node, parts.join("/")) : node;
+      if (val.array) C().setArr(target, pn, val.items);
+      else C().setRaw(target, pn, val.raw);
+    });
+    return node;
+  }
+  function baseAmmoName(v, ammo) {
+    const own = modelAmmo(v, ammo);
+    return own ? baseAmmoName(v, own.base) : ammo;
+  }
+  /** Stellt sicher, dass es einen eigenen Ammo-Klon dieser Variante/Stufe gibt, und liefert dessen Namen. */
+  function ensureClone(v, tier, ammo) {
+    const prefix = "XCP_T" + tier + "_" + v.key + "_";
+    if (ammo.indexOf(prefix) === 0 && modelAmmo(v, ammo)) return ammo;
+    const root = v.model.root;
+    let ca = C().child(root, "CfgAmmo");
+    if (!ca) {
+      ca = { name: "CfgAmmo", base: "", props: [], children: [] };
+      root.children.push(ca);
+    }
+    const base = baseAmmoName(v, ammo);
+    const name = prefix + base;
+    if (!ca.children.some((c) => c.name === name)) {
+      if (!ca.children.some((c) => c.forward && lcs(c.name) === lcs(base))) ca.children.unshift({ name: base, base: "", props: [], children: [], forward: true });
+      const da = damageAppliedCopy(v, ammo);
+      ca.children.push({ name: name, base: base, props: [], children: [da] });
+    }
+    // Vanilla-Nahkampf-Ammo: Addon als Voraussetzung eintragen
+    if (/^Melee/.test(base)) {
+      const cp = C().child(root, "CfgPatches");
+      const pc = cp && cp.children.find((c) => !c.forward);
+      if (pc) {
+        const ra = C().prop(pc, "requiredAddons");
+        if (ra && ra.array && !ra.items.some((i) => lcs(unq(i)) === "dz_weapons_melee")) ra.items.push(C().quote("DZ_Weapons_Melee"));
+      }
+    }
+    return name;
+  }
+  function setAmmoDamage(v, tier, grp, key, val) {
+    const clone = ensureClone(v, tier, grp.ammo);
+    const own = modelAmmo(v, clone);
+    C().setNum(C().ensure(own, "DamageApplied/" + key), "damage", val);
+    if (grp.ammo !== clone) {
+      grp.attacks.forEach((a) => C().setRaw(C().ensure(v.tiers[tier], "AttackActions/" + a), "ammoType", C().quote(clone)));
+      grp.ammo = clone;
+    }
+    touch();
+  }
+  /** Angriffe der Stufe, gruppiert nach Ammo-Klasse. */
+  function attackGroups(v, tier) {
+    const keys = collectKeys(v, tier, /^AttackActions\/[^/]+\/ammoType$/i);
+    const names = [];
+    keys.forEach((k) => {
+      const n = /^AttackActions\/([^/]+)\//i.exec(k)[1];
+      if (names.indexOf(n) < 0) names.push(n);
+    });
+    const groups = [];
+    names.forEach((a) => {
+      const x = valOf(v, tier, "AttackActions/" + a + "/ammoType");
+      if (!x) return;
+      const ammo = unq(x.raw);
+      let g = groups.find((q) => q.ammo === ammo);
+      if (!g) groups.push((g = { ammo: ammo, attacks: [] }));
+      g.attacks.push(a);
+    });
+    return groups;
+  }
+
+  function renderAttacks(box, v) {
+    const tier = st.tier;
+    const groups = attackGroups(v, tier);
+    const host = h("div", {});
+    const body = h("div", {});
+    groups.forEach((g) => {
+      const calc = h("div", { class: "small muted" });
+      const upd = () => {
+        const hh = ammoDamage(v, g.ammo, "Health");
+        const bb = ammoDamage(v, g.ammo, "Blood");
+        const ss = ammoDamage(v, g.ammo, "Shock");
+        const bits = [];
+        if (hh > 0) bits.push("Spieler (100 Leben) tot nach " + fmt(Math.ceil(100 / hh), 0) + " Treffern");
+        if (ss > 0) bits.push("bewusstlos (100 Schock) nach " + fmt(Math.ceil(100 / ss), 0));
+        if (bb > 0) bits.push("Blutverlust " + fmt(bb, 1) + " je Treffer");
+        calc.textContent = bits.join(" · ") + " (ohne Rüstung des Spielers)";
+      };
+      const row = h("div", { class: "grid2" }, AMMO_DMG.map(([k, l]) => {
+        const cur = ammoDamage(v, g.ammo, k);
+        const inp = h("input", { type: "number", step: "any", min: "0", value: Number.isFinite(cur) ? cur : "", placeholder: "–" });
+        if (g.ammo.indexOf("XCP_T" + tier + "_") === 0) inp.classList.add("ov2-changed-input");
+        inp.addEventListener("input", () => {
+          const n = Number(inp.value);
+          if (inp.value.trim() === "" || !Number.isFinite(n) || n < 0) return;
+          setAmmoDamage(v, tier, g, k, n);
+          inp.classList.add("ov2-changed-input");
+          upd();
+        });
+        return field(l + "-Schaden", k === "Health" ? "Lebenspunkte, die ein Treffer dem Spieler abzieht (vor Rüstung des Spielers)." : k === "Blood" ? "Blutverlust pro Treffer (Blutungs-Wirkung)." : "Schock pro Treffer; bei 100 wird der Spieler bewusstlos.", inp);
+      }));
+      upd();
+      body.appendChild(
+        h("div", { class: "section", style: "margin:6px 0" }, [
+          h("div", { class: "section-body" }, [
+            h("div", { class: "mono small", text: g.ammo + "   ·   Angriffe: " + g.attacks.join(", ") }),
+            row,
+            calc,
+          ]),
+        ])
+      );
+    });
+    // Reichweite/Takt je Angriff (nur Anzeige)
+    const tb = h("tbody");
+    groups.forEach((g) => g.attacks.forEach((a) => {
+      const f2 = (k) => {
+        const x = valOf(v, tier, "AttackActions/" + a + "/" + k);
+        return x ? fmt(Number(x.raw), 2) : "–";
+      };
+      tb.appendChild(h("tr", {}, [h("td", { text: a }), h("td", { class: "mono small", text: g.ammo }), h("td", { text: f2("minDistance") + " – " + f2("distance") + " m" }), h("td", { text: f2("time") + " s" }), h("td", { text: f2("cooldown") + " s" })]));
+    }));
+    host.appendChild(
+      h("div", { class: "section" }, [
+        h("div", { class: "section-head" }, ["Angriffe & Schaden · Stufe T" + tier, tipNode("Der Schaden eines Mutanten steht nicht in seiner Klasse, sondern in der Ammo-Klasse seines Angriffs (CfgAmmo). Ändern erzeugt für diese Variante und Stufe einen eigenen Klon (XCP_T<n>_<Variante>_<Ammo>) in der Override-Config und trägt ihn als ammoType der Angriffe ein – so bleiben alle anderen Mutanten unberührt, die dieselbe Original-Ammo teilen.")]),
+        h("div", { class: "section-body" }, [
+          groups.length
+            ? null
+            : h("div", { class: "issue warn", text: "Keine Angriffe gefunden. Lade die SFP-PBOs (und für Vanilla-Ammo die weapons_melee.pbo aus dem DayZ-Addons-Ordner), damit die Original-Werte angezeigt werden." }),
+          body,
+          groups.length ? h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Angriff", "Ammo-Klasse", "Reichweite", "Dauer", "Pause"].map((t) => h("th", { text: t })))]), tb])]) : null,
+          groups.some((g) => !Number.isFinite(ammoDamage(v, g.ammo, "Health"))) ? h("div", { class: "issue warn", text: "Für mindestens eine Ammo-Klasse fehlen die Werte (nicht geladen). Vanilla-Nahkampf-Ammo liegt in weapons_melee.pbo (DayZ/addons) – bitte zusätzlich laden." }) : null,
+        ]),
+      ])
+    );
+    box.appendChild(host);
+  }
+
+  /** Schaden-Faktor: Werte der gleichen Angriffe aus T1 × Faktor als Schaden dieser Stufe. */
+  function scaleDamage(v, tier, factor) {
+    if (!v.tiers[tier] || !v.tiers["1"] || tier === "1") return 0;
+    let n = 0;
+    attackGroups(v, tier).forEach((g) => {
+      const a0 = g.attacks[0];
+      const t1x = valOf(v, "1", "AttackActions/" + a0 + "/ammoType");
+      if (!t1x) return;
+      const t1Ammo = unq(t1x.raw);
+      AMMO_DMG.forEach(([k]) => {
+        const b = ammoDamage(v, t1Ammo, k);
+        if (Number.isFinite(b)) {
+          setAmmoDamage(v, tier, g, k, Math.round(b * factor * 100) / 100);
+          n++;
+        }
+      });
+    });
+    return n;
   }
 
   // ---------------------------------------------------------------- Faktor-Werkzeug
@@ -283,7 +598,7 @@
     const numIn = (key, label, tip) => field(label, tip, h("input", { type: "number", step: "any", min: "0.1", value: st[key], style: "max-width:110px", oninput: (e) => (Number(e.target.value) > 0 && ((st[key] = Number(e.target.value)), calc())) }));
     const scope = h("select", { onchange: (e) => ((st.scope = e.target.value), calc()) }, [h("option", { value: "fam", text: "Nur die gewählte Familie (" + (st.fam || "–") + ")", selected: st.scope === "fam" }), h("option", { value: "all", text: "Alle Mutanten", selected: st.scope === "all" })]);
     box.appendChild(h("div", { class: "section" }, [h("div", { class: "section-body" }, [
-      h("div", { class: "grid2" }, [numIn("f2", "Faktor T2", "T2-Lebenspunkte = T1 × Faktor (gerundet). Beispiel: T1 = 2500, Faktor 1,4 → 3500."), numIn("f3", "Faktor T3", "T3-Lebenspunkte = T1 × Faktor (gerundet). Beispiel: T1 = 2500, Faktor 2 → 5000."), field("Gilt für", "Welche Mutanten betroffen sind.", scope)]),
+      h("div", { class: "grid2" }, [numIn("f2", "Faktor T2", "T2-Lebenspunkte = T1 × Faktor (gerundet). Beispiel: T1 = 2500, Faktor 1,4 → 3500."), numIn("f3", "Faktor T3", "T3-Lebenspunkte = T1 × Faktor (gerundet). Beispiel: T1 = 2500, Faktor 2 → 5000."), numIn("d2", "Schaden-Faktor T2", "T2-Schaden (Leben/Blut/Schock je Treffer) = T1-Schaden × Faktor. 1 = unverändert (es wird dann nichts geschrieben). Legt für jede betroffene Variante eigene Ammo-Klone in der Override-Config an."), numIn("d3", "Schaden-Faktor T3", "T3-Schaden = T1-Schaden × Faktor. 1 = unverändert."), field("Gilt für", "Welche Mutanten betroffen sind.", scope)]),
       h("div", { class: "toolbar" }, [h("button", { class: "btn primary", type: "button", text: "Anwenden", onclick: () => {
         let n = 0;
         targets().forEach((f) => f.vars.forEach((v) => {
@@ -291,6 +606,7 @@
           if (!Number.isFinite(b)) return;
           [["2", st.f2], ["3", st.f3]].forEach(([t, fac]) => v.tiers[t] && (setHp(v, t, Math.max(1, Math.round(b * fac))), n++));
         }));
+        targets().forEach((f) => f.vars.forEach((v) => [["2", st.d2], ["3", st.d3]].forEach(([t, fac]) => fac !== 1 && (n += scaleDamage(v, t, fac)))));
         EQE.toast(n + " Werte gesetzt.");
         render();
       } })]),
