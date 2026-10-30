@@ -670,6 +670,7 @@
     while ((m = rx.exec(raw))) set.add(m[1]);
     return set;
   }
+  let STEP = 4; // Einrückung (wird aus der Originaldatei erkannt)
   function ser(v, ind, key, fl) {
     const pad = " ".repeat(ind);
     if (v === null || v === undefined) return "null";
@@ -678,13 +679,15 @@
     if (typeof v === "boolean") return v ? "true" : "false";
     if (Array.isArray(v)) {
       if (!v.length) return "[]";
-      return "[\n" + v.map((x) => pad + "    " + ser(x, ind + 4, key, fl)).join(",\n") + "\n" + pad + "]";
+      return "[\n" + v.map((x) => pad + " ".repeat(STEP) + ser(x, ind + STEP, key, fl)).join(",\n") + "\n" + pad + "]";
     }
     const keys = Object.keys(v);
     if (!keys.length) return "{}";
-    return "{\n" + keys.map((k) => pad + "    " + JSON.stringify(k) + ": " + ser(v[k], ind + 4, k, fl)).join(",\n") + "\n" + pad + "}";
+    return "{\n" + keys.map((k) => pad + " ".repeat(STEP) + JSON.stringify(k) + ": " + ser(v[k], ind + STEP, k, fl)).join(",\n") + "\n" + pad + "}";
   }
   function stringify(item) {
+    const m = /^\{\r?\n( +)"/.exec(item.rawText || "");
+    STEP = m ? m[1].length : 4;
     return ser(item.json, 0, "", floatNames(item)) + "\n";
   }
 

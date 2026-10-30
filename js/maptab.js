@@ -87,20 +87,60 @@ window.EQE = window.EQE || {};
     if (frame && frame.contentWindow) frame.contentWindow.postMessage(msg, window.location.origin);
   }
 
+  /** Quelldatei je Kartendaten-Typ (die Karte kennt „radiation“ auch für die Strahlungszonen des Radiation-Mods). */
+  const pick = (kind) => P().byKind(kind).find((i) => !/_old/i.test(i.fileId || "")) || P().byKind(kind)[0] || null;
+  const SOURCES = {
+    zones: () => pick("zones"),
+    tiers: () => pick("tiers"),
+    radiation: () => pick("rad_zones") || pick("radiation"),
+    anomalies: () => pick("anomalies"),
+  };
+  function hash(str) {
+    let x = 5381;
+    for (let i = 0; i < str.length; i++) x = ((x << 5) + x + str.charCodeAt(i)) | 0;
+    return x;
+  }
+  function dataSignature() {
+    return Object.keys(SOURCES)
+      .map((k) => {
+        const it = SOURCES[k]();
+        return k + ":" + (it ? it.uid + ":" + hash(JSON.stringify(it.json)) : "-");
+      })
+      .join("|");
+  }
+
   function sendAll() {
     if (!ready) return;
-    // Kartendaten (Mutanten, Strahlung, Anomalien) nur senden, wenn sie sich geändert haben
-    const dataSig = P()
-      .MAP_KINDS.map((k) => k + ":" + P().byKind(k).map((i) => i.uid + (i.dirty ? "*" : "")).join(","))
-      .join("|");
+    // Kartendaten (Mutanten, Strahlung, Anomalien) nur senden, wenn sich der Inhalt geändert hat
+    const dataSig = dataSignature();
     if (dataSig !== sentData) {
       sentData = dataSig;
-      P().MAP_KINDS.forEach((k) => {
-        const it = P().byKind(k)[0];
+      Object.keys(SOURCES).forEach((k) => {
+        const it = SOURCES[k]();
         if (it) send({ eqe: "data", type: k, json: it.json });
       });
     }
     send({ eqe: "markers", markers: buildMarkers() });
+  }
+
+  /** Änderung aus der Karte in die Projektdatei übernehmen (wird beim Speichern mitgeschrieben). */
+  function applyChange(type, payload) {
+    const it = SOURCES[type] && SOURCES[type]();
+    if (!it || payload === undefined || payload === null) return;
+    P().mutate(it.uid, (j) => {
+      if (type === "anomalies") {
+        Object.keys(j).forEach((k) => delete j[k]);
+        Object.assign(j, payload);
+      } else if (Array.isArray(j)) {
+        j.length = 0;
+        payload.forEach((x) => j.push(x));
+      } else {
+        const keys = type === "zones" ? ["zones", "Zones", "spawnZones", "SpawnZones"] : ["m_RadiationTrigger", "RadiationZones", "radiationZones", "Zones", "zones"];
+        const key = keys.find((k) => Array.isArray(j[k])) || Object.keys(j).find((k) => Array.isArray(j[k])) || keys[0];
+        j[key] = payload;
+      }
+    });
+    sentData = dataSignature(); // nicht an die Karte zurückschicken
   }
 
   function schedule() {
@@ -110,6 +150,8 @@ window.EQE = window.EQE || {};
   }
 
   function init(root) {
+    // Zonen/Tiers/Anomalien in der Originaleinrückung und mit .0-Kommazahlen zurückschreiben
+    if (EQE.MPKit) P().registerSerializer(["zones", "tiers", "anomalies", "radiation"], EQE.MPKit.stringify);
     const host = h("div", { class: "map-host" });
     root.appendChild(host);
 
@@ -123,6 +165,8 @@ window.EQE = window.EQE || {};
         sendAll();
       } else if (m.eqe === "open" && m.uid) {
         EQE.openItem(m.uid);
+      } else if (m.eqe === "changed" && m.type) {
+        applyChange(m.type, m.payload);
       }
     });
     P().on((ev) => {
