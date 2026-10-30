@@ -191,6 +191,40 @@
     return field(label, tip, inp);
   }
 
+  /** Formular: neues Beute-Teil im Skinning-Block dieser Stufe anlegen. */
+  function addLootForm(node) {
+    const listId = EQE.uid();
+    const names = K().classSuggest("CfgVehicles");
+    const item = h("input", { type: "text", placeholder: "Klassenname, z. B. Bone", list: listId, style: "min-width:200px" });
+    const count = h("input", { type: "number", min: "1", step: "1", value: 1, style: "width:70px" });
+    const qmin = h("input", { type: "number", min: "0", step: "any", value: 0.5, style: "width:70px" });
+    const qmax = h("input", { type: "number", min: "0", step: "any", value: 1, style: "width:70px" });
+    const add = () => {
+      const cls = item.value.trim();
+      if (!cls) return EQE.toast("Bitte einen Klassennamen für den Gegenstand eingeben.", true);
+      const sk = C().ensure(node, "Skinning");
+      const base = "Obtained" + cls.replace(/[^A-Za-z0-9]/g, "");
+      let name = base;
+      for (let i = 2; sk.children.some((c) => c.name.toLowerCase() === name.toLowerCase()); i++) name = base + i;
+      const part = C().ensure(sk, name);
+      C().setRaw(part, "item", C().quote(cls));
+      C().setNum(part, "count", Math.max(1, Math.round(Number(count.value) || 1)));
+      const lo = Number(qmin.value);
+      const hi = Number(qmax.value);
+      C().setArr(part, "quantityMinMaxCoef", [Number.isFinite(lo) ? lo : 0, Number.isFinite(hi) ? hi : 1]);
+      touch();
+      render();
+    };
+    return h("div", { class: "toolbar" }, [
+      h("span", { class: "muted small", text: "Neues Teil:" }),
+      item,
+      names.length ? h("datalist", { id: listId }, names.slice(0, 5000).map((n) => h("option", { value: n }))) : null,
+      h("label", { class: "small" }, ["Anzahl ", count, tipNode("Wie viele Stücke dieses Gegenstands beim Ausnehmen entstehen.")]),
+      h("label", { class: "small" }, ["Menge min/max ", qmin, " – ", qmax, tipNode("Anteil der Maximalmenge pro Stück (0 bis 1); bei Fleisch/Fett z. B. 0,5 bis 1 = halbe bis volle Portion. Bei Gegenständen ohne Menge egal.")]),
+      h("button", { class: "btn small primary", type: "button", text: "Hinzufügen", onclick: add }),
+    ]);
+  }
+
   function renderVariant(box, f, v) {
     const tabs = h("div", { class: "toolbar" }, TIERS.filter((t) => v.tiers[t]).map((t) => h("button", { class: "btn small" + (st.tier === t ? " primary" : ""), type: "button", text: "Stufe T" + t, onclick: () => ((st.tier = t), render()) })));
     if (!v.tiers[st.tier]) st.tier = TIERS.find((t) => v.tiers[t]) || "1";
@@ -253,6 +287,7 @@
             ? h("div", { class: "toolbar" }, [h("button", { class: "btn small", type: "button", text: "Eigenen Block entfernen (wieder von T1 erben)", onclick: () => ((node.children = node.children.filter((c) => c.name.toLowerCase() !== "skinning")), touch(), render()) })])
             : null,
           sk ? h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Teil", "Gegenstand", "Anzahl", "Menge min/max (Faktor)", "Erwartung", ""].map((t) => h("th", { text: t })))]), sBody])]) : null,
+          !inherited ? addLootForm(node) : null,
           sk && !inherited ? h("div", { class: "help", text: "Entfernen setzt die Anzahl auf 0. Bei Stufen mit eigenem Block gilt das nur für diese Stufe – Teile, die der Block nicht aufführt, kommen weiterhin von der Basisklasse (T1)." }) : null,
         ]),
       ])
