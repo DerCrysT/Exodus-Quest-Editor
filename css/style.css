@@ -466,3 +466,20 @@ input.invalid, select.invalid { border-color: var(--danger); }
 /* ---------------------------------------------------------------- Tooltip-Fenster (frei schwebend) */
 .tip::after { display: none !important; }
 .eqe-tooltip { position: fixed; z-index: 400; max-width: min(420px, calc(100vw - 16px)); padding: 10px 12px; background: #0b0f0c; color: var(--text); border: 1px solid var(--accent-dim); border-radius: var(--radius); font-size: 12.5px; line-height: 1.5; white-space: pre-line; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+
+/* ---- XCP Loot System (nur dieser Bereich) ---- */
+.xcp-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.xcp-row { display: grid; align-items: center; gap: 6px; width: var(--w); padding: 0 6px; box-sizing: border-box; border-bottom: 1px solid var(--border); left: 0; }
+.xcp-row.sel { background: var(--bg-card); }
+.xcp-head { position: sticky; top: 0; z-index: 2; background: var(--bg-panel); height: 30px; font-size: 12px; color: var(--text-dim); }
+.xcp-th { background: none; border: 0; color: inherit; text-align: left; cursor: pointer; font: inherit; padding: 0; }
+.xcp-vbox { width: var(--w); }
+.xcp-cell { padding: 3px 6px !important; font-size: 12px !important; }
+.xcp-lib { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.xcp-colmenu { position: relative; display: inline-block; }
+.xcp-colpop { position: absolute; z-index: 5; background: var(--bg-panel); border: 1px solid var(--border-light); padding: 8px; max-height: 260px; overflow: auto; min-width: 200px; }
+.xcp-bars { margin: 10px 0; }
+.xcp-bar { display: grid; grid-template-columns: 220px 1fr 70px; gap: 8px; align-items: center; font-size: 12px; margin: 2px 0; }
+.xcp-bl { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.xcp-bv { display: block; height: 10px; background: var(--accent-dim); border-radius: 2px; }
+.xcp-sortable { cursor: pointer; }

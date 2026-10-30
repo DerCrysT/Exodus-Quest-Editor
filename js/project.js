@@ -16,15 +16,16 @@ window.EQE = window.EQE || {};
   const MP_KINDS = ["medplus", "mp_zombie", "mp_animal", "mp_blade", "mp_weapon", "mp_liquid", "mp_soup", "mp_fear"];
   const RAD_KINDS = ["rad_general", "rad_bombing", "rad_zones", "rad_wrecks", "rad_cloth", "rad_filter", "rad_bombzones"];
   const PDA_KINDS = ["pda_factions", "pda_loner"];
+  const XCP_KINDS = ["xcp_loot", "xcp_items"];
   const AN_KINDS = ["an_balance", "an_trigger", "an_detector", "an_reload", "an_teleport", "efx_base", "efx_medplus", "efx_timer"];
-  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS, PDA_KINDS);
+  const KINDS = ["quest", "npc", "dialog", "stash", "trader", "tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS, PDA_KINDS, XCP_KINDS);
   const ID_KEY = { quest: "QuestId", npc: "NpcId", dialog: "DialogId", stash: "StashId", trader: "trader_id" };
   // Dateien ohne ID im JSON: die ID ist der Dateiname (ohne .json) – bei Kategorien so von den Tradern referenziert
-  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS, PDA_KINDS);
+  const FILEID_KINDS = ["tcat", "bcat", "zones", "tiers", "radiation", "anomalies", "tsettings"].concat(MP_KINDS, RAD_KINDS, AN_KINDS, PDA_KINDS, XCP_KINDS);
   const NAME_KEY = { quest: "Title", npc: "Name", dialog: "Title", stash: "Mode", trader: "trader_name", tcat: "name_category", bcat: "name_category" };
-  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus", rad_general: "Radiation", rad_bombing: "Radiation", rad_zones: "Radiation", rad_wrecks: "Radiation", rad_cloth: "Radiation", rad_filter: "Radiation", rad_bombzones: "Radiation", an_balance: "Anomaly & Detectoren", an_trigger: "Anomaly & Detectoren", an_detector: "Anomaly & Detectoren", an_reload: "Anomaly & Detectoren", an_teleport: "Anomaly & Detectoren", efx_base: "Artefakt EFX", efx_medplus: "Artefakt EFX", efx_timer: "Artefakt EFX", pda_factions: "PDA", pda_loner: "PDA" };
-  const FOLDER_MARKER = { tcat: "trader_category_list", bcat: "barter_category_list" };
-  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen", rad_general: "Radiation-Config", rad_bombing: "Radiation Bombardement", rad_zones: "Strahlungszonen", rad_wrecks: "Wrack-Zonen", rad_cloth: "Schutz-Ausrüstung", rad_filter: "Radiation-Filter", rad_bombzones: "Bomben-Zonen", an_balance: "Anomalie-Balance", an_trigger: "Anomalie-Auslöser", an_detector: "Detektoren", an_reload: "Anomalie-Neuladen", an_teleport: "Teleport-Ziele", efx_base: "Artefakt-Effekte", efx_medplus: "Artefakt-Effekte MedPlus", efx_timer: "Artefakt-Takt", pda_factions: "PDA-Fraktionen", pda_loner: "PDA Loner-Spawn" };
+  const FOLDER = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "XCP_Trade_System", tcat: "XCP_Trade_System/trader_category_list", bcat: "XCP_Trade_System/barter_category_list", tsettings: "XCP_Trade_System", zones: "Map", tiers: "Map", radiation: "Map", anomalies: "Map", medplus: "MedPlus", mp_zombie: "MedPlus", mp_animal: "MedPlus", mp_blade: "MedPlus", mp_weapon: "MedPlus", mp_liquid: "MedPlus", mp_soup: "MedPlus", mp_fear: "MedPlus", rad_general: "Radiation", rad_bombing: "Radiation", rad_zones: "Radiation", rad_wrecks: "Radiation", rad_cloth: "Radiation", rad_filter: "Radiation", rad_bombzones: "Radiation", an_balance: "Anomaly & Detectoren", an_trigger: "Anomaly & Detectoren", an_detector: "Anomaly & Detectoren", an_reload: "Anomaly & Detectoren", an_teleport: "Anomaly & Detectoren", efx_base: "Artefakt EFX", efx_medplus: "Artefakt EFX", efx_timer: "Artefakt EFX", pda_factions: "PDA", pda_loner: "PDA", xcp_loot: "XCP_Loot_System", xcp_items: "Item Libary" };
+  const FOLDER_MARKER = { tcat: "trader_category_list", bcat: "barter_category_list", xcp_loot: "XCP_Loot_System", xcp_items: "Item Libary" };
+  const KIND_LABEL = { quest: "Quest", npc: "NPC", dialog: "Dialog", stash: "Stash", trader: "Trader", tcat: "Handelskategorie", bcat: "Tauschkategorie", zones: "Mutanten-Zonen", tiers: "Tiers", radiation: "Strahlung", anomalies: "Anomalien", tsettings: "Trader-Settings", medplus: "MedPlus-Config", mp_zombie: "MedPlus Zombies", mp_animal: "MedPlus Tiere", mp_blade: "MedPlus Klingen", mp_weapon: "MedPlus Munition", mp_liquid: "MedPlus Getränke", mp_soup: "MedPlus Suppen", mp_fear: "MedPlus Angstzonen", rad_general: "Radiation-Config", rad_bombing: "Radiation Bombardement", rad_zones: "Strahlungszonen", rad_wrecks: "Wrack-Zonen", rad_cloth: "Schutz-Ausrüstung", rad_filter: "Radiation-Filter", rad_bombzones: "Bomben-Zonen", an_balance: "Anomalie-Balance", an_trigger: "Anomalie-Auslöser", an_detector: "Detektoren", an_reload: "Anomalie-Neuladen", an_teleport: "Teleport-Ziele", efx_base: "Artefakt-Effekte", efx_medplus: "Artefakt-Effekte MedPlus", efx_timer: "Artefakt-Takt", pda_factions: "PDA-Fraktionen", pda_loner: "PDA Loner-Spawn", xcp_loot: "XCP-Lootpool", xcp_items: "XCP-Item-Datenbank" };
   const MAP_KINDS = ["zones", "tiers", "radiation", "anomalies"];
   const STORE_KEY = "eqe:project:v1";
 
@@ -94,6 +95,8 @@ window.EQE = window.EQE || {};
     }
     if (!j || typeof j !== "object") return null;
     // MedPlus (Medizin-Mod): Config und Tabellen-Dateien
+    if (typeof j.Klasse === "string" && Array.isArray(j.Lootpool)) return "xcp_loot";
+    if (j.xcpItemLibrary && Array.isArray(j.items)) return "xcp_items";
     if (Array.isArray(j.Fraktionen)) return "pda_factions";
     if (j.StandardKit && Array.isArray(j.PremiumKits)) return "pda_loner";
     if (j.anomalyBalance && typeof j.anomalyBalance === "object") return "an_balance";
@@ -540,6 +543,7 @@ window.EQE = window.EQE || {};
       const near = traderPos.some((x) => Math.hypot(x.p[0] - pp[0], x.p[2] - pp[2]) <= 8);
       if (!near) push("warn", it, "Ein Dialog öffnet mit @trade den Handel, aber kein Trader steht innerhalb von 8 m um diesen NPC (der Trader-Mod prüft die Distanz).");
     });
+    if (EQE.XcpLoot) EQE.XcpLoot.crossCheck(push);
     return issues;
   }
 
@@ -550,6 +554,10 @@ window.EQE = window.EQE || {};
     const result = { counts, replaced: 0, unknown: [], errors: [], configs: 0 };
     for (const e of entries) {
       const name = e.path || e.file.name;
+      if (EQE.XcpLoot && /(^|\/)XCP_Loot_System\/.*\.c$/i.test(name)) {
+        EQE.XcpLoot.ingestPositions(name, await e.file.text());
+        continue;
+      }
       if (EQE.CfgEdit && /(^|\/)XCP_EXO_Override\/scripts\/.*\.c$/i.test(name)) {
         EQE.CfgEdit.ingestScript(name, await e.file.text());
         continue;
@@ -1164,6 +1172,9 @@ window.EQE = window.EQE || {};
     exportPath,
     changedCount: () => items.filter(isChanged).length + pendingDeletes().length + extras.reduce((n, x) => n + x.changedCount(), 0),
     registerExtra: (x) => extras.push(x),
+    uniqueIdFor: uniqueId,
+    exportTextOf: exportText,
+    XCP_KINDS: XCP_KINDS,
     repoPlan,
     repoFinish,
     ingestEntries,

@@ -26,6 +26,11 @@
     const item = EQE.Project.get(uid);
     if (!item) return;
     if (!EQE.editors[item.kind]) {
+      if (EQE.Project.XCP_KINDS.indexOf(item.kind) > -1) {
+        switchTab(item.kind === "xcp_items" ? "xcpitems" : "xcploot");
+        if (item.kind === "xcp_loot" && EQE.XcpLoot.select) EQE.XcpLoot.select(uid);
+        return;
+      }
       if (EQE.Project.PDA_KINDS.indexOf(item.kind) > -1) {
         switchTab("pda");
         if (EQE.Pda) EQE.Pda.openItem(uid);
@@ -68,6 +73,8 @@
     const anomaly = EQE.Anomaly.init(document.getElementById("panel-anomaly"));
     refreshers.anomaly = anomaly.refresh;
     EQE.Checklist.init();
+    const xcp = EQE.XcpLoot.init({ loot: document.getElementById("panel-xcploot"), items: document.getElementById("panel-xcpitems"), sim: document.getElementById("panel-xcpsim"), cmp: document.getElementById("panel-xcpcmp") });
+    Object.assign(refreshers, xcp.refresh);
     const pda = EQE.Pda.init(document.getElementById("panel-pda"));
     refreshers.pda = pda.refresh;
     const mutants = EQE.Mutants.init(document.getElementById("panel-mutants"));
