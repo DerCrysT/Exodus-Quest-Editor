@@ -118,32 +118,63 @@
     return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
-  const rootOf = () => (cfg.root || "Exodus").replace(/^\/+|\/+$/g, "");
+  const rootOf = () => (P().hasFolder() ? P().folderName() : (cfg.root || "Exodus")).replace(/^\/+|\/+$/g, "");
   const stripRoot = (p, root) => (root && p.indexOf(root + "/") === 0 ? p.slice(root.length + 1) : p);
 
   // ---------------------------------------------------------------- Pull
-  async function pull() {
-    if (P().changedCount() > 0 && !confirm("Es gibt ungespeicherte Änderungen im Editor. Ein Pull ersetzt gleiche Dateien durch die Version aus dem Repository. Trotzdem fortfahren?")) return;
+  async function pull(opts) {
+    const clone = !!(opts && opts.clone);
+    if (!clone && P().changedCount() > 0 && !confirm("Es gibt ungespeicherte Änderungen im Editor. Ein Pull ersetzt gleiche Dateien durch die Version aus dem Repository. Trotzdem fortfahren?")) return;
     setStatus("Verbinde mit GitHub …");
     const hd = await head();
     const tree = await listTree(hd.tree);
     const root = rootOf();
     const want = Object.keys(tree).filter((p) => SYNC_RE.test(p) || (cfg.pbo && /\.pbo$/i.test(p)));
     const known = EQE.Cfg ? EQE.Cfg.sources().map((s) => s.path) : [];
-    const todo = want.filter((p) => !(/\.pbo$/i.test(p) && base[p] === tree[p].sha && known.some((k) => k.indexOf(root + "/" + p) === 0)));
+    const local = P().hasFolder();
+    const todo = [];
+    for (const p of want) {
+      const isPbo = /\.pbo$/i.test(p);
+      // PBOs nur laden, wenn sie neu sind oder lokal fehlen (große Dateien)
+      const skip = !clone && isPbo && base[p] === tree[p].sha && (local ? await P().existsLocal(p) : known.some((k) => k.indexOf(root + "/" + p) === 0));
+      if (!skip) todo.push(p);
+    }
     const totalMb = todo.reduce((n, p) => n + (tree[p].size || 0), 0) / 1048576;
     let done = 0;
     const entries = [];
+    const toDisk = [];
     await pool(todo, 5, async (p) => {
       const buf = await api(repoPath("/git/blobs/" + tree[p].sha), null, true);
       entries.push({ file: new File([buf], p.split("/").pop()), path: root + "/" + p });
+      if (local) toDisk.push({ path: p, data: buf });
       done++;
       setStatus("Lade " + done + " / " + todo.length + " Dateien (" + totalMb.toFixed(1) + " MB) …");
     });
+    let written = 0;
+    if (local && toDisk.length) {
+      setStatus("Schreibe " + toDisk.length + " Dateien in den lokalen Ordner …");
+      written = await P().writeLocal(toDisk);
+    }
     const r = await P().ingestEntries(entries);
     want.forEach((p) => (base[p] = tree[p].sha));
     saveBase();
-    setStatus("Pull fertig: " + todo.length + " Dateien geladen (Commit " + hd.commit.slice(0, 7) + ", " + cfg.repo + "@" + cfg.branch + ")." + (r.errors.length ? " " + r.errors.length + " fehlerhaft." : ""));
+    setStatus((clone ? "Clone" : "Pull") + " fertig: " + todo.length + " Dateien geladen" + (local ? ", " + written + " in den lokalen Ordner „" + P().folderName() + "“ geschrieben" : " (kein lokaler Ordner verbunden – nur im Editor)") + " (Commit " + hd.commit.slice(0, 7) + ", " + cfg.repo + "@" + cfg.branch + ")." + (r.errors.length ? " " + r.errors.length + " fehlerhaft." : ""));
+  }
+
+  /** Repository in einen (neuen/leeren) lokalen Ordner klonen und diesen als Projektordner verbinden. */
+  async function cloneToFolder() {
+    if (typeof window.showDirectoryPicker !== "function") throw new Error("Dein Browser kann nicht in Ordner schreiben – bitte Chrome oder Edge verwenden.");
+    let dir;
+    try {
+      dir = await window.showDirectoryPicker({ mode: "readwrite", id: "eqe-project" });
+    } catch (e) {
+      return;
+    }
+    let existing = 0;
+    for await (const _ of dir.entries()) existing++; // eslint-disable-line no-unused-vars
+    if (existing && !window.confirm("Der Ordner „" + dir.name + "“ ist nicht leer. Dateien mit gleichem Namen werden durch die Version aus dem Repository überschrieben. Fortfahren?")) return;
+    P().connectFolder(dir);
+    await pull({ clone: true });
   }
 
   // ---------------------------------------------------------------- Push
@@ -203,6 +234,13 @@
     writes.forEach((x) => (base[x.rp] = x.sha));
     dels.forEach((x) => delete base[x.rp]);
     saveBase();
+    if (P().hasFolder()) {
+      try {
+        await P().writeLocal(plan.writes.map((w) => ({ path: stripRoot(w.path, root), data: w.text })));
+      } catch (e) {
+        EQE.toast("Push ok, aber lokaler Ordner nicht aktualisiert: " + e.message, true);
+      }
+    }
     P().repoFinish(plan.writes, plan.dels);
     setStatus("Push fertig: Commit " + c.sha.slice(0, 7) + " – " + real.length + " Datei(en)" + (dels.length ? ", " + dels.length + " gelöscht" : "") + ".");
   }
@@ -252,12 +290,13 @@
       h("label", { class: "checkrow" }, [h("input", { type: "checkbox", checked: cfg.pbo, onchange: (e) => ((cfg.pbo = e.target.checked), saveCfg()) }), "PBOs beim Pull mitladen"]),
     ]);
     const acts = h("div", { class: "toolbar" }, [
-      h("button", { class: "btn primary gh-act", type: "button", text: "⇩ Pull (aus Repository laden)", title: "Lädt JSONs, Configs, Skripte (und PBOs) aus dem Repository in den Editor", onclick: () => run(pull) }),
+      h("button", { class: "btn gh-act", type: "button", text: "⎘ Clone (in lokalen Ordner)", title: "Wählt einen Ordner auf deinem Rechner, lädt das ganze Repository dorthin und verbindet ihn als Projektordner", onclick: () => run(cloneToFolder) }),
+      h("button", { class: "btn primary gh-act", type: "button", text: "⇩ Pull (aus Repository laden)", title: "Lädt JSONs, Configs, Skripte (und PBOs) aus dem Repository, aktualisiert den Editor und den verbundenen lokalen Ordner", onclick: () => run(() => pull()) }),
       h("button", { class: "btn primary gh-act", type: "button", text: "⇧ Push (Änderungen hochladen)", title: "Schreibt deine neuen/geänderten Dateien als einen Commit ins Repository", onclick: () => run(push) }),
       h("span", { class: "gh-status muted small", text: state.status }),
     ]);
     box.appendChild(h("h3", { text: "GitHub-Abgleich (gemeinsames Repository)" }));
-    box.appendChild(h("p", { class: "hint", text: "Pull lädt den aktuellen Stand aus dem Repository, Push lädt deine Änderungen als Commit hoch – so bleibt ihr auf demselben Stand. Vor dem Arbeiten pullen, nach dem Arbeiten pushen. Hat dein Partner dieselbe Datei geändert, warnt der Push vor dem Überschreiben." }));
+    box.appendChild(h("p", { class: "hint", text: "Empfohlener Ablauf: Projektordner verbinden (oder „Clone“ in einen neuen Ordner), dann Pull – die Dateien landen auch im lokalen Ordner (dort packst du PBOs). Pull lädt den aktuellen Stand aus dem Repository, Push lädt deine Änderungen als Commit hoch und aktualisiert den lokalen Ordner – so bleibt ihr auf demselben Stand. Vor dem Arbeiten pullen, nach dem Arbeiten pushen. Hat dein Partner dieselbe Datei geändert, warnt der Push vor dem Überschreiben." }));
     box.appendChild(grid);
     box.appendChild(opts);
     box.appendChild(acts);

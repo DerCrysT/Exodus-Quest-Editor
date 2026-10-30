@@ -984,6 +984,41 @@ window.EQE = window.EQE || {};
     persist();
     emit({ type: "saved" });
   }
+  /** Dateien in den verbundenen lokalen Projektordner schreiben (files: [{path: relativ zum Ordner, data: String|ArrayBuffer}]). */
+  async function writeLocal(files) {
+    if (!rootHandle || !files.length) return 0;
+    if (rootHandle.requestPermission && (await rootHandle.requestPermission({ mode: "readwrite" })) !== "granted") throw new Error("Keine Schreibberechtigung für den lokalen Ordner.");
+    let n = 0;
+    for (const f of files) {
+      const segs = f.path.split("/").filter((x) => x);
+      const name = segs.pop();
+      const dir = await dirFor(rootHandle, segs, true);
+      const fh = await dir.getFileHandle(name, { create: true });
+      const ws = await fh.createWritable();
+      await ws.write(f.data);
+      await ws.close();
+      n++;
+    }
+    return n;
+  }
+  /** Existiert die Datei (relativer Pfad) im verbundenen Ordner? */
+  async function existsLocal(path) {
+    if (!rootHandle) return false;
+    try {
+      const segs = path.split("/").filter((x) => x);
+      const name = segs.pop();
+      const dir = await dirFor(rootHandle, segs, false);
+      await dir.getFileHandle(name);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  /** Einen (z. B. neu gewählten) Ordner als Projektordner verbinden. */
+  function connectFolder(handle) {
+    rootHandle = handle;
+  }
+
   /** Eingelesene Dateien (z. B. aus GitHub) wie einen Ordner-Import verarbeiten. */
   async function ingestEntries(entries) {
     const r = await readEntries(entries);
@@ -1132,6 +1167,10 @@ window.EQE = window.EQE || {};
     repoPlan,
     repoFinish,
     ingestEntries,
+    writeLocal,
+    existsLocal,
+    connectFolder,
+    folderName: () => (rootHandle ? rootHandle.name : ""),
     rootNameGuess: () => projectRootName(null),
     pendingList,
     registerSerializer: (kinds, fn) => kinds.forEach((k) => (serializers[k] = fn)),
