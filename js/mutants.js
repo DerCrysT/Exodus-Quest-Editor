@@ -494,6 +494,12 @@
     C().setNum(C().ensure(own, "DamageApplied/" + key), "damage", val);
     if (grp.ammo !== clone) {
       grp.attacks.forEach((a) => C().setRaw(C().ensure(v.tiers[tier], "AttackActions/" + a), "ammoType", C().quote(clone)));
+      if (grp.sphere) {
+        // Arrays werden nicht gemergt: die komplette Liste mit dem ersetzten Eintrag schreiben
+        const cur = valOf(v, tier, "DamageSphereAmmos");
+        const items = (cur ? cur.items : []).map((it) => (unq(it) === grp.ammo ? C().quote(clone) : it));
+        C().setArr(v.tiers[tier], "DamageSphereAmmos", items);
+      }
       grp.ammo = clone;
     }
     touch();
@@ -515,6 +521,14 @@
       if (!g) groups.push((g = { ammo: ammo, attacks: [] }));
       g.attacks.push(a);
     });
+    // Tiere: Schaden über DamageSphereAmmos[] (Liste von Ammo-Klassen)
+    const sp = valOf(v, tier, "DamageSphereAmmos");
+    if (sp && sp.array) {
+      sp.items.forEach((it) => {
+        const ammo = unq(it);
+        if (ammo && !groups.some((q) => q.ammo === ammo)) groups.push({ ammo: ammo, attacks: [], sphere: true });
+      });
+    }
     return groups;
   }
 
@@ -552,7 +566,7 @@
       body.appendChild(
         h("div", { class: "section", style: "margin:6px 0" }, [
           h("div", { class: "section-body" }, [
-            h("div", { class: "mono small", text: g.ammo + "   ·   Angriffe: " + g.attacks.join(", ") }),
+            h("div", { class: "mono small", text: g.ammo + "   ·   " + (g.sphere ? "Schadenssphäre (Tier-Biss/Prankenhieb)" : "Angriffe: " + g.attacks.join(", ")) }),
             row,
             calc,
           ]),
@@ -577,7 +591,7 @@
             : h("div", { class: "issue warn", text: "Keine Angriffe gefunden. Lade die SFP-PBOs (und für Vanilla-Ammo die weapons_melee.pbo aus dem DayZ-Addons-Ordner), damit die Original-Werte angezeigt werden." }),
           body,
           groups.length ? h("div", { class: "table-scroll" }, [h("table", { class: "ptable prod-table" }, [h("thead", {}, [h("tr", {}, ["Angriff", "Ammo-Klasse", "Reichweite", "Dauer", "Pause"].map((t) => h("th", { text: t })))]), tb])]) : null,
-          groups.some((g) => !Number.isFinite(ammoDamage(v, g.ammo, "Health"))) ? h("div", { class: "issue warn", text: "Für mindestens eine Ammo-Klasse fehlen die Werte (nicht geladen). Vanilla-Nahkampf-Ammo liegt in weapons_melee.pbo (DayZ/addons) – bitte zusätzlich laden." }) : null,
+          groups.some((g) => !Number.isFinite(ammoDamage(v, g.ammo, "Health"))) ? h("div", { class: "issue warn", text: "Für mindestens eine Ammo-Klasse fehlen die Werte (nicht geladen). Vanilla-Nahkampf-Ammo (Zombies, Tiere) liegt in den DayZ-PBOs unter DayZ/addons (z. B. weapons_melee.pbo, animals.pbo) – bitte zusätzlich laden. Fehlend: " + groups.filter((g) => !Number.isFinite(ammoDamage(v, g.ammo, "Health"))).map((g) => g.ammo).join(", ") }) : null,
         ]),
       ])
     );
@@ -589,10 +603,16 @@
     if (!v.tiers[tier] || !v.tiers["1"] || tier === "1") return 0;
     let n = 0;
     attackGroups(v, tier).forEach((g) => {
-      const a0 = g.attacks[0];
-      const t1x = valOf(v, "1", "AttackActions/" + a0 + "/ammoType");
-      if (!t1x) return;
-      const t1Ammo = unq(t1x.raw);
+      let t1Ammo;
+      if (g.sphere) {
+        const t1g = attackGroups(v, "1").find((q) => q.sphere && baseAmmoName(v, q.ammo) === baseAmmoName(v, g.ammo));
+        if (!t1g) return;
+        t1Ammo = t1g.ammo;
+      } else {
+        const t1x = valOf(v, "1", "AttackActions/" + g.attacks[0] + "/ammoType");
+        if (!t1x) return;
+        t1Ammo = unq(t1x.raw);
+      }
       AMMO_DMG.forEach(([k]) => {
         const b = ammoDamage(v, t1Ammo, k);
         if (Number.isFinite(b)) {
